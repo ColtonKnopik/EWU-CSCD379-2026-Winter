@@ -187,6 +187,9 @@ const checkGuess = (guess) => {
     won.value = true
     showMessage('You won! 🎉', 'success')
     gameEnded(true, guesses.value.length)
+    setTimeout(() => {
+      initializeGame()
+    }, 2000)
     return tileColors
   }
 
@@ -194,6 +197,9 @@ const checkGuess = (guess) => {
     gameOver.value = true
     showMessage(`Game over! The word was ${answer.value}`, 'error')
     gameEnded(false, ROWS)
+    setTimeout(() => {
+      initializeGame()
+    }, 2000)
   }
 
   return tileColors
