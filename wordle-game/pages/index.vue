@@ -85,6 +85,7 @@ const keyStates = ref({})
 const message = ref('')
 const messageType = ref('')
 const showHand = ref(false)
+const slapAudio = ref(null)
 
 const initializeGame = () => {
   answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
@@ -98,13 +99,17 @@ const initializeGame = () => {
   message.value = ''
 }
 
-// Play slap sound when hand swings. Place `slap.mp3` at `public/sounds/slap.mp3`.
+// Preload slap sound and play with low latency
+// Place `slap.mp3` at `public/sounds/slap.mp3`.
 const playSlap = () => {
   try {
-    const audio = new Audio('/sounds/slap.mp3')
-    audio.play().catch(() => {})
+    const a = slapAudio.value
+    if (!a) return
+    // restart and play
+    a.currentTime = 0
+    a.play().catch(() => {})
   } catch (e) {
-    // ignore
+    // ignore playback errors
   }
 }
 
@@ -275,6 +280,17 @@ onMounted(async () => {
   }
   
   initializeGame()
+  // create and preload slap audio for lower-latency playback
+  try {
+    const a = new Audio('/sounds/slap.mp3')
+    a.preload = 'auto'
+    // optional: set volume if desired
+    // a.volume = 0.9
+    a.load()
+    slapAudio.value = a
+  } catch (e) {
+    console.warn('Failed to preload slap audio', e)
+  }
   window.addEventListener('keydown', handlePhysicalKeyboard)
 })
 
@@ -524,15 +540,15 @@ const pushLettersAway = () => {
       opacity: 1;
     }
     60% {
-      transform: translateX(-120px) rotate(-20deg) scale(1.03);
+      transform: rotate(-20deg) scale(1.03);
       opacity: 1;
     }
     90% {
-      transform: translateX(-480px) rotate(-8deg) scale(1);
+      transform: rotate(-20deg) scale(1.02);
       opacity: 1;
     }
     100% {
-      transform: translateX(-620px) rotate(-8deg) scale(1);
+      transform: rotate(-20deg) scale(1);
       opacity: 0;
     }
   }
