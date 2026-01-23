@@ -1,59 +1,59 @@
 <template>
-  <div class="app">
-    <NuxtRouteAnnouncer />
+  
+  <NuxtRouteAnnouncer />
 
-    <!-- Header -->
-    <Header />
+  
 
-    <!-- Page layout -->
-    <v-container class="page" fluid>
-      <v-row justify="center">
-        <!-- Main content column -->
-        <v-col cols="12" sm="10" md="8" lg="6" class="d-flex justify-center">
-          <div class="game-board-container">
-            <!-- Game Board -->
-            <div class="game-board">
+
+  <!-- Page layout -->
+  <v-container class="page" fluid>
+    <v-row justify="center">
+      <!-- Main content column -->
+      <v-col cols="12" sm="10" md="8" lg="6" class="d-flex justify-center">
+        <div class="game-board-container">
+          <!-- Game Board -->
+          <div class="game-board">
+            <div
+              v-for="row in 6"
+              :key="row"
+              class="wordle-row"
+            >
               <div
-                v-for="row in 6"
-                :key="row"
-                class="wordle-row"
+                v-for="col in 5"
+                :key="col"
+                class="wordle-tile"
+                :data-state="getTileState(row - 1, col - 1)"
               >
-                <div
-                  v-for="col in 5"
-                  :key="col"
-                  class="wordle-tile"
-                  :data-state="getTileState(row - 1, col - 1)"
-                >
-                  <span>{{ board[row - 1]?.[col - 1] || '' }}</span>
-                </div>
+                <span>{{ board[row - 1]?.[col - 1] || '' }}</span>
               </div>
-            </div>
-
-            <!-- Keyboard -->
-            <div class="keyboard">
-              <div class="keyboard-row" v-for="(row, idx) in keyboardRows" :key="idx">
-                <button
-                  v-for="key in row"
-                  :key="key"
-                  class="key-button"
-                  :class="{ 'key-special': key === 'ENTER' || key === 'BACKSPACE' }"
-                  :data-status="getKeyStatus(key)"
-                  @click="handleKeyPress(key)"
-                >
-                  {{ key === 'BACKSPACE' ? '⌫' : key }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Game Status Message -->
-            <div v-if="message" class="message" :class="messageType">
-              {{ message }}
             </div>
           </div>
-        </v-col>
-      </v-row>
-    </v-container>
-  </div>
+
+          <!-- Keyboard -->
+          <div class="keyboard">
+            <div class="keyboard-row" v-for="(row, idx) in keyboardRows" :key="idx">
+              <button
+                v-for="key in row"
+                :key="key"
+                class="key-button"
+                :class="{ 'key-special': key === 'ENTER' || key === 'BACKSPACE' }"
+                :data-status="getKeyStatus(key)"
+                @click="handleKeyPress(key)"
+              >
+                {{ key === 'BACKSPACE' ? '⌫' : key }}
+              </button>
+            </div>
+          </div>
+
+          <!-- Game Status Message -->
+          <div v-if="message" class="message" :class="messageType">
+            {{ message }}
+          </div>
+        </div>
+      </v-col>
+    </v-row>
+  </v-container>
+  
 </template>
 
 <script setup>

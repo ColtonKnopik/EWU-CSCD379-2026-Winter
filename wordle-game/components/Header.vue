@@ -1,40 +1,58 @@
 <template>
-  <header class="toolbar">
-    <h1 class="logo">WORDLE</h1>
-    <div class="toolbar-right">
-      <slot name="right"></slot>
+  <v-app-bar
+    class="sp-header"
+    :color="color"
+    :elevation="0"
+    border
+    scroll-behavior="hide"
+  >
+    <!-- Optional left content -->
+    <template #prepend>
+      <slot name="left" />
+    </template>
+
+    <v-app-bar-title class="sp-title">
+      {{ title }}
+    </v-app-bar-title>
+
+    <v-spacer />
+
+    <!-- Right / actions -->
+    <div class="sp-right">
+      <slot name="right" />
     </div>
-  </header>
+  </v-app-bar>
 </template>
 
-<script setup>
+<script setup lang="ts">
+type Props = {
+  title?: string
+  
+  color?: string
+}
+
+withDefaults(defineProps<Props>(), {
+  title: 'WORDLE',
+  color: '#23202a',
+})
 </script>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 15px 30px;
-  background-color: #23202a;
-  border-bottom: 1px solid #444;
+/* Keep your branding without fighting Vuetify's layout */
+.sp-header {
   color: #ffffff;
-  position: sticky;
-  top: 0;
-  z-index: 100;
 }
 
-.logo {
+.sp-title {
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 2px;
-  margin: 0;
   color: #c777c3;
 }
 
-.toolbar-right {
+.sp-right {
   display: flex;
-  gap: 15px;
   align-items: center;
+  gap: 12px;
 }
 </style>
