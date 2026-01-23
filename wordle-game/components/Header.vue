@@ -17,25 +17,39 @@
     <v-spacer />
 
     <div class="sp-right">
-      <!-- Your page-level actions still work -->
       <slot name="right" />
 
-      <!-- Theme toggle -->
+      <!-- Stats / leaderboard button -->
+      <v-btn
+        icon
+        variant="text"
+        aria-label="Open stats"
+        @click="(e) => { statsOpen = true; blurTarget(e) }"
+      >
+        <v-icon icon="mdi-chart-box-outline" />
+      </v-btn>
+
       <v-btn
         icon
         variant="text"
         aria-label="Toggle theme"
-        @click="toggleTheme"
+        @click="(e) => { toggleTheme(); blurTarget(e) }"
       >
         <v-icon :icon="isDark ? 'mdi-weather-sunny' : 'mdi-moon-waning-crescent'" />
       </v-btn>
+
+
     </div>
   </v-app-bar>
+
+  <!-- Dialog lives alongside the app-bar -->
+  <Leaderboard v-model="statsOpen" />
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, watch, ref } from 'vue'
 import { useTheme } from 'vuetify'
+import Leaderboard from '~/components/Leaderboard.vue'
 
 type ThemeName = 'light' | 'dark'
 
@@ -46,25 +60,22 @@ type Props = {
 
 withDefaults(defineProps<Props>(), {
   title: 'WORDLE',
-  color: '#23202a',
+  color: 'surface',
 })
+
+
+const statsOpen = ref(false)
 
 const theme = useTheme()
-
-// Persist theme choice (Nuxt cookie)
-const themeCookie = useCookie<ThemeName>('theme', {
-  default: () => 'light',
-})
+const themeCookie = useCookie<ThemeName>('theme', { default: () => 'light' })
 
 onMounted(() => {
-  // Apply saved theme on first load
   theme.global.name.value = themeCookie.value
 })
 
 watch(
   () => theme.global.name.value,
   (val) => {
-    // Keep cookie in sync
     if (val === 'light' || val === 'dark') themeCookie.value = val
   }
 )
@@ -74,12 +85,16 @@ const isDark = computed(() => theme.global.current.value.dark)
 const toggleTheme = () => {
   theme.global.name.value = isDark.value ? 'light' : 'dark'
 }
+
+const blurTarget = (e: Event) => {
+  const el = e.currentTarget as HTMLElement | null
+  el?.blur()
+}
+
 </script>
 
 <style scoped>
-.sp-header {
-  color: #ffffff;
-}
+.sp-header { color: #ffffff; }
 
 .sp-title {
   font-size: 28px;

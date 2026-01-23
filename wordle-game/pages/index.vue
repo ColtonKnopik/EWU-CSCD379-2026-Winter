@@ -274,12 +274,22 @@ const showMessage = (msg, type) => {
 }
 
 const handlePhysicalKeyboard = (event) => {
+  const target = event.target
+
+  // If a dialog/overlay is open and focused, don't hijack keys
+  if (target && target.closest?.('.v-overlay-container')) return
+
+  // If user is typing in an input somewhere, don't hijack keys
+  const tag = target?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+
   const key = event.key.toUpperCase()
 
   if (/^[A-Z]$/.test(key)) handleKeyPress(key)
   else if (key === 'ENTER') handleKeyPress('ENTER')
   else if (key === 'BACKSPACE') handleKeyPress('BACKSPACE')
 }
+
 
 onMounted(async () => {
   try {
