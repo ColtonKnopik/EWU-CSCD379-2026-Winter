@@ -55,9 +55,10 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Header from '~/components/Header.vue'
 import Leaderboard from '~/components/Leaderboard.vue'
+import { loadWordsFromFile } from '~/utils/wordLoader'
 
-const WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
-const VALID_WORDS = new Set(WORD_LIST)
+let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
+let VALID_WORDS = new Set(WORD_LIST)
 
 const keyboardRows = [
   ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
@@ -252,7 +253,15 @@ const handlePhysicalKeyboard = (event) => {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    WORD_LIST = await loadWordsFromFile()
+    VALID_WORDS = new Set(WORD_LIST)
+    console.log(`✓ Loaded ${WORD_LIST.length} words`)
+  } catch (error) {
+    console.error('Failed to load words:', error)
+  }
+  
   initializeGame()
   window.addEventListener('keydown', handlePhysicalKeyboard)
 })
