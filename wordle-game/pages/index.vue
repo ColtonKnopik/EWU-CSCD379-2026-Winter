@@ -87,8 +87,19 @@ const messageType = ref('')
 const showHand = ref(false)
 const slapAudio = ref(null)
 
-const initializeGame = () => {
-  answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
+// initializeGame optionally accepts an initialWord (e.g. word of the day).
+const initializeGame = (initialWord = null) => {
+  if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
+    answer.value = initialWord.toUpperCase()
+    // ensure word is valid for submission checks
+    if (!VALID_WORDS.has(answer.value)) {
+      WORD_LIST.push(answer.value)
+      VALID_WORDS.add(answer.value)
+    }
+  } else {
+    answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
+  }
+
   board.value = Array(6).fill(null).map(() => Array(5).fill(''))
   guesses.value = []
   currentGuess.value = ''
@@ -279,7 +290,25 @@ onMounted(async () => {
     console.error('Failed to load words:', error)
   }
   
-  initializeGame()
+  // Attempt to fetch Word of the Day (WOTD) and start with it. If fetch fails or invalid,
+  // fall back to a random word.
+  try {
+    const res = await fetch('/api/word_of_the_day')
+    if (res.ok) {
+      const data = await res.json()
+      const w = (data?.word || '').toUpperCase()
+      if (/^[A-Z]{5}$/.test(w)) {
+        initializeGame(w)
+      } else {
+        initializeGame()
+      }
+    } else {
+      initializeGame()
+    }
+  } catch (e) {
+    // If the API isn't available or errors, just initialize normally.
+    initializeGame()
+  }
   // create and preload slap audio for lower-latency playback
   try {
     const a = new Audio('/sounds/slap.mp3')
