@@ -63,7 +63,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Header from '~/components/Header.vue'
-import { loadWordsFromFile } from '~/utils/wordLoader'
+import { loadTargetWords, loadValidWords, loadWordsFromFile } from '~/utils/wordLoader'
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
@@ -293,13 +293,19 @@ const handlePhysicalKeyboard = (event) => {
 
 onMounted(async () => {
   try {
-    WORD_LIST = await loadWordsFromFile()
-    VALID_WORDS = new Set(WORD_LIST)
-    console.log(`✓ Loaded ${WORD_LIST.length} words`)
+    const [targets, valids] = await Promise.all([loadTargetWords(), loadValidWords()])
+    // targets -> WORD_LIST (answers), valids -> VALID_WORDS
+    if (Array.isArray(targets) && targets.length) {
+      WORD_LIST = targets
+    }
+    if (Array.isArray(valids) && valids.length) {
+      VALID_WORDS = new Set(valids)
+    }
+    console.log(`✓ Loaded ${WORD_LIST.length} target words, ${Array.from(VALID_WORDS).length} valid words`)
   } catch (error) {
-    console.error('Failed to load words:', error)
+    console.error('Failed to load word lists:', error)
   }
-  
+
   // Attempt to fetch Word of the Day (WOTD) and start with it. If fetch fails or invalid,
   // fall back to a random word.
   try {
