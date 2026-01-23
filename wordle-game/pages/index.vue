@@ -1,53 +1,58 @@
 <template>
   <div class="app">
     <NuxtRouteAnnouncer />
-    
+
     <!-- Header -->
     <Header />
 
-    <!-- Leaderboard (fixed left) -->
-    <Leaderboard />
+    <!-- Page layout -->
+    <v-container class="page" fluid>
+      <v-row justify="center">
+        <!-- Main content column -->
+        <v-col cols="12" sm="10" md="8" lg="6" class="d-flex justify-center">
+          <div class="game-board-container">
+            <!-- Game Board -->
+            <div class="game-board">
+              <div
+                v-for="row in 6"
+                :key="row"
+                class="wordle-row"
+              >
+                <div
+                  v-for="col in 5"
+                  :key="col"
+                  class="wordle-tile"
+                  :data-state="getTileState(row - 1, col - 1)"
+                >
+                  <span>{{ board[row - 1]?.[col - 1] || '' }}</span>
+                </div>
+              </div>
+            </div>
 
-    <!-- Game Area (centered) -->
-    <div class="game-board-container">
-      <div class="game-board">
-        <div
-          v-for="row in 6"
-          :key="row"
-          class="wordle-row"
-        >
-          <div
-            v-for="col in 5"
-            :key="col"
-            class="wordle-tile"
-            :data-state="getTileState(row - 1, col - 1)"
-          >
-            <span>{{ board[row - 1]?.[col - 1] || '' }}</span>
+            <!-- Keyboard -->
+            <div class="keyboard">
+              <div class="keyboard-row" v-for="(row, idx) in keyboardRows" :key="idx">
+                <button
+                  v-for="key in row"
+                  :key="key"
+                  class="key-button"
+                  :class="{ 'key-special': key === 'ENTER' || key === 'BACKSPACE' }"
+                  :data-status="getKeyStatus(key)"
+                  @click="handleKeyPress(key)"
+                >
+                  {{ key === 'BACKSPACE' ? '⌫' : key }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Game Status Message -->
+            <div v-if="message" class="message" :class="messageType">
+              {{ message }}
+            </div>
           </div>
-        </div>
-      </div>
-
-      <!-- Keyboard -->
-      <div class="keyboard">
-        <div class="keyboard-row" v-for="(row, idx) in keyboardRows" :key="idx">
-          <button
-            v-for="key in row"
-            :key="key"
-            class="key-button"
-            :class="{ 'key-special': key === 'ENTER' || key === 'BACKSPACE' }"
-            :data-status="getKeyStatus(key)"
-            @click="handleKeyPress(key)"
-          >
-            {{ key === 'BACKSPACE' ? '⌫' : key }}
-          </button>
-        </div>
-      </div>
-
-      <!-- Game Status Message -->
-      <div v-if="message" class="message" :class="messageType">
-        {{ message }}
-      </div>
-    </div>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
@@ -90,19 +95,13 @@ const initializeGame = () => {
 
 const getTileState = (row, col) => {
   if (row >= guesses.value.length) return 'empty'
-  
+
   const guess = guesses.value[row]
   const letter = guess[col]
   const answerArray = answer.value.split('')
-  
-  if (letter === answerArray[col]) {
-    return 'correct'
-  }
-  
-  if (answerArray.includes(letter)) {
-    return 'present'
-  }
-  
+
+  if (letter === answerArray[col]) return 'correct'
+  if (answerArray.includes(letter)) return 'present'
   return 'wrong'
 }
 
@@ -112,19 +111,17 @@ const getKeyStatus = (key) => {
 
 const handleKeyPress = (key) => {
   if (gameOver.value) return
-  
+
   if (key === 'ENTER') {
     submitGuess()
   } else if (key === 'BACKSPACE') {
     currentGuess.value = currentGuess.value.slice(0, -1)
-    // Clear board display
     for (let i = currentGuess.value.length; i < 5; i++) {
       board.value[guesses.value.length][i] = ''
     }
   } else {
     if (currentGuess.value.length < 5) {
       currentGuess.value += key
-      // Update board display
       for (let i = 0; i < currentGuess.value.length; i++) {
         board.value[guesses.value.length][i] = currentGuess.value[i]
       }
@@ -145,7 +142,6 @@ const submitGuess = () => {
 
   const feedback = checkGuess(currentGuess.value)
   currentGuess.value = ''
-
   return feedback
 }
 
@@ -157,7 +153,6 @@ const checkGuess = (guess) => {
   const guessArr = guess.split('')
   const tileColors = Array(COLS).fill('wrong')
 
-  // first pass: correct
   for (let i = 0; i < COLS; i++) {
     if (guessArr[i] === wordArr[i]) {
       tileColors[i] = 'correct'
@@ -165,7 +160,6 @@ const checkGuess = (guess) => {
     }
   }
 
-  // second pass: present
   for (let i = 0; i < COLS; i++) {
     if (tileColors[i] === 'correct') continue
     const idx = wordArr.indexOf(guessArr[i])
@@ -175,10 +169,8 @@ const checkGuess = (guess) => {
     }
   }
 
-  // push guess so getTileState will reflect it
   guesses.value.push(guess)
 
-  // update key states using priority: correct > present > wrong
   for (let i = 0; i < COLS; i++) {
     const letter = guessArr[i]
     const color = tileColors[i]
@@ -189,7 +181,6 @@ const checkGuess = (guess) => {
     else if (!prev) keyStates.value[letter] = 'wrong'
   }
 
-  // check win
   if (guess === answer.value) {
     gameOver.value = true
     won.value = true
@@ -198,7 +189,6 @@ const checkGuess = (guess) => {
     return tileColors
   }
 
-  // check lose
   if (guesses.value.length >= ROWS) {
     gameOver.value = true
     showMessage(`Game over! The word was ${answer.value}`, 'error')
@@ -225,10 +215,10 @@ const gameEnded = (wonFlag, guessesCount) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ won: wonFlag, guesses: guessesCount })
   })
-  .then(res => res.json())
-  .then(stats => {
-    console.log('stats updated', stats)
-  }).catch(() => {})
+    .then(res => res.json())
+    .then(stats => {
+      console.log('stats updated', stats)
+    }).catch(() => {})
 }
 
 const showMessage = (msg, type) => {
@@ -239,17 +229,12 @@ const showMessage = (msg, type) => {
   }, 2000)
 }
 
-// Handle physical keyboard
 const handlePhysicalKeyboard = (event) => {
   const key = event.key.toUpperCase()
-  
-  if (/^[A-Z]$/.test(key)) {
-    handleKeyPress(key)
-  } else if (key === 'ENTER') {
-    handleKeyPress('ENTER')
-  } else if (key === 'BACKSPACE') {
-    handleKeyPress('BACKSPACE')
-  }
+
+  if (/^[A-Z]$/.test(key)) handleKeyPress(key)
+  else if (key === 'ENTER') handleKeyPress('ENTER')
+  else if (key === 'BACKSPACE') handleKeyPress('BACKSPACE')
 }
 
 onMounted(() => {
@@ -277,14 +262,20 @@ onUnmounted(() => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Give the Vuetify container some consistent vertical breathing room */
+.page {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+
+/* Now this is just the centered game stack (no more margin-left hack) */
 .game-board-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  width: 100%;
   padding: 20px;
-  margin-left: 260px;
 }
 
 /* Game Board */
@@ -421,12 +412,6 @@ onUnmounted(() => {
 }
 
 /* Responsive Design */
-@media (max-width: 1024px) {
-  .game-board-container {
-    margin-left: 0;
-  }
-}
-
 @media (max-width: 600px) {
   .wordle-tile {
     width: 50px;
