@@ -521,7 +521,7 @@ const pushLettersAway = () => {
 
   @keyframes hand-sweep-left {
     0% {
-      transform: translateX(120px) rotate(40deg) scale(1.05);
+      transform: rotate(40deg) scale(1.05);
       opacity: 1;
     }
     60% {
