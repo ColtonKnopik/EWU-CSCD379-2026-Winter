@@ -49,8 +49,8 @@
         </div>
       </v-col>
     </v-row>
-    <!-- Leaderboard (fixed left) -->
-    <Leaderboard />
+    
+   
 
     <!-- Hand animation (shown on invalid guess) -->
     <div v-if="showHand" class="hand-container">
@@ -63,7 +63,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import Header from '~/components/Header.vue'
-import Leaderboard from '~/components/Leaderboard.vue'
 import { loadWordsFromFile } from '~/utils/wordLoader'
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']

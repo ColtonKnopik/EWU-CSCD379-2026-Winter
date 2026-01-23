@@ -12,6 +12,9 @@ html, body, #__nuxt {
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: #ffffff;
+
+  /* Vuetify theme-driven */
+  background-color: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
 }
 </style>
