@@ -2,9 +2,6 @@
   
   <NuxtRouteAnnouncer />
 
-  
-
-
   <!-- Page layout -->
   <v-container class="page" fluid>
     <v-row justify="center">
@@ -52,6 +49,13 @@
         </div>
       </v-col>
     </v-row>
+    <!-- Leaderboard (fixed left) -->
+    <Leaderboard />
+
+    <!-- Hand animation (shown on invalid guess) -->
+    <div v-if="showHand" class="hand-container">
+      <img src="/images/hand.png" alt="hand" class="hand-image" />
+    </div>
   </v-container>
   
 </template>
@@ -81,6 +85,7 @@ const guessedLetters = ref(new Set())
 const keyStates = ref({})
 const message = ref('')
 const messageType = ref('')
+const showHand = ref(false)
 
 const initializeGame = () => {
   answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
@@ -92,6 +97,16 @@ const initializeGame = () => {
   guessedLetters.value = new Set()
   keyStates.value = {}
   message.value = ''
+}
+
+// Play slap sound when hand swings. Place `slap.mp3` at `public/sounds/slap.mp3`.
+const playSlap = () => {
+  try {
+    const audio = new Audio('/sounds/slap.mp3')
+    audio.play().catch(() => {})
+  } catch (e) {
+    // ignore
+  }
 }
 
 const getTileState = (row, col) => {
@@ -137,7 +152,14 @@ const submitGuess = () => {
   }
 
   if (!VALID_WORDS.has(currentGuess.value)) {
+    // show hand and push letters away
+    showHand.value = true
+    pushLettersAway()
     showMessage('Not in word list', 'error')
+    // clear current guess so tiles visually removed
+    currentGuess.value = ''
+    // hide hand after animation completes (match hand sweep duration)
+    setTimeout(() => { showHand.value = false }, 1300)
     return
   }
 
@@ -260,6 +282,39 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handlePhysicalKeyboard)
 })
+
+// Push letters off the board with animation
+const pushLettersAway = () => {
+  const rowIndex = guesses.value.length
+  const row = document.querySelectorAll('.game-board .wordle-row')[rowIndex]
+  if (!row) return
+
+  // For each tile in the current row, add a class that triggers CSS animation
+  const tiles = row.querySelectorAll('.wordle-tile')
+  tiles.forEach((tile, idx) => {
+    tile.classList.add('push-away')
+    // stagger
+    tile.style.transitionDelay = `${idx * 60}ms`
+  })
+
+  // play slap sound at start of animation
+  playSlap()
+
+  // After animation, clear those tiles visually
+  setTimeout(() => {
+    // remove animation class and inline delay
+    tiles.forEach(tile => {
+      tile.classList.remove('push-away')
+      tile.style.transitionDelay = ''
+    })
+
+    // update reactive board state for this row so Vue re-renders and input works
+    const idx = rowIndex
+    if (board.value && board.value[idx]) {
+      board.value[idx] = Array(tiles.length).fill('')
+    }
+  }, 700)
+}
 </script>
 
 <style scoped>
@@ -444,4 +499,49 @@ onUnmounted(() => {
     max-width: 50px;
   }
 }
+
+/* Hand animation */
+  .hand-container {
+    position: fixed;
+    left: 50%;
+    bottom: 40px; /* anchor the base near the bottom */
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .hand-image {
+    width: 340px; 
+    transform-origin: center bottom; /* anchor at the base */
+    animation: hand-sweep-left 1.2s cubic-bezier(.2,.9,.2,1) forwards;
+  }
+
+  @keyframes hand-sweep-left {
+    0% {
+      transform: translateX(120px) rotate(40deg) scale(1.05);
+      opacity: 1;
+    }
+    60% {
+      transform: translateX(-120px) rotate(-20deg) scale(1.03);
+      opacity: 1;
+    }
+    90% {
+      transform: translateX(-480px) rotate(-8deg) scale(1);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-620px) rotate(-8deg) scale(1);
+      opacity: 0;
+    }
+  }
+
+  /* Push away tiles to the left (match sweep distance) */
+  .wordle-tile.push-away {
+    transform: translateX(-340px) translateY(-24px) rotate(-25deg);
+    opacity: 0;
+    transition: transform 1.2s cubic-bezier(.2,.9,.2,1), opacity 1.2s cubic-bezier(.2,.9,.2,1);
+  }
 </style>
