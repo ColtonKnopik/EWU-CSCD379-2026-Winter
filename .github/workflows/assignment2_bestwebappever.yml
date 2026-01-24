@@ -27,13 +27,6 @@ jobs:
         working-directory: ./wordle-game
         run: npm run build
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_DA161BE9575B40078E2039721C01EC44 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_8E68DA8D5A474219B515341F202B0ECC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_AE022B4297DD4D06B7A5C14B653E8BEB }}
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
@@ -43,6 +36,7 @@ jobs:
           package: ./wordle-game/dist
 
           
+
 
 
 
