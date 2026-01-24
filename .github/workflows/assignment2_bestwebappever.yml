@@ -20,9 +20,11 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
+        working-directory: Assignment2/wordle-game
         run: npm install
 
       - name: Build Vue app
+        working-directory: Assignment2/wordle-game
         run: npm run build
 
       - name: Login to Azure
@@ -41,3 +43,4 @@ jobs:
           package: .
 
           
+
