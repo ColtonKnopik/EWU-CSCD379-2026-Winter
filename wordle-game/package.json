@@ -3,9 +3,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate",
+    "build": "nuxt build",
+    "generate": "nuxt generate",        
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "export": "nuxt build && nuxt generate"
