@@ -24,7 +24,7 @@
         icon
         variant="text"
         aria-label="Open stats"
-        @click="(e) => { statsOpen = true; blurTarget(e) }"
+        @click="(e: MouseEvent) => { statsOpen = true; blurTarget(e) }"
       >
         <v-icon icon="mdi-chart-box-outline" />
       </v-btn>
@@ -33,7 +33,7 @@
         icon
         variant="text"
         aria-label="Toggle theme"
-        @click="(e) => { toggleTheme(); blurTarget(e) }"
+        @click="(e: MouseEvent) => { toggleTheme(); blurTarget(e) }"
       >
         <v-icon :icon="isDark ? 'mdi-weather-sunny' : 'mdi-moon-waning-crescent'" />
       </v-btn>
@@ -63,8 +63,7 @@ withDefaults(defineProps<Props>(), {
   color: 'surface',
 })
 
-
-const statsOpen = ref(false)
+const statsOpen = useState<boolean>('statsOpen', () => false)
 
 const theme = useTheme()
 const themeCookie = useCookie<ThemeName>('theme', { default: () => 'light' })

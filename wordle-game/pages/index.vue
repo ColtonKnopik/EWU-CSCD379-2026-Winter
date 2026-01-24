@@ -27,20 +27,14 @@
           </div>
 
           <!-- Keyboard -->
-          <div class="keyboard">
-            <div class="keyboard-row" v-for="(row, idx) in keyboardRows" :key="idx">
-              <button
-                v-for="key in row"
-                :key="key"
-                class="key-button"
-                :class="{ 'key-special': key === 'ENTER' || key === 'BACKSPACE' }"
-                :data-status="getKeyStatus(key)"
-                @click="handleKeyPress(key)"
-              >
-                {{ key === 'BACKSPACE' ? '⌫' : key }}
-              </button>
-            </div>
-          </div>
+          <Keyboard
+            :disabled="gameOver"
+            :enter-disabled="currentGuess.length !== WORD_LENGTH"
+            :backspace-disabled="currentGuess.length === 0"
+            :key-statuses="keyStatuses"
+            @press="handleVirtualKey"
+          />
+
 
           <!-- Game Status Message -->
           <div v-if="message" class="message" :class="messageType">
@@ -62,17 +56,15 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import Header from '~/components/Header.vue'
 import { loadTargetWords, loadValidWords, loadWordsFromFile } from '~/utils/wordLoader'
+import Keyboard from '~/components/Keyboard.vue'
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
 
-const keyboardRows = [
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['ENTER', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'BACKSPACE']
-]
+const statsOpen = useState('statsOpen', () => false)
+
+const WORD_LENGTH = 5
 
 const board = ref(Array(6).fill(null).map(() => Array(5).fill('')))
 const guesses = ref([])
@@ -87,8 +79,28 @@ const messageType = ref('')
 const showHand = ref(false)
 const slapAudio = ref(null)
 
+
+// Map your existing keyStates into the shape <Keyboard /> expects
+const keyStatuses = computed(() => {
+  // expected: 'unused' | 'absent' | 'present' | 'correct'
+  const out = {}
+  for (const [k, v] of Object.entries(keyStates.value)) {
+    // your code uses: 'wrong' | 'present' | 'correct'
+    if (v === 'correct') out[k] = 'correct'
+    else if (v === 'present') out[k] = 'present'
+    else if (v === 'wrong') out[k] = 'absent'
+  }
+  return out
+})
+
+function handleVirtualKey(key) {
+  // Keyboard.vue emits: 'ENTER', 'BACKSPACE', or 'A'..'Z'
+  handleKeyPress(key)
+}
+
 // initializeGame optionally accepts an initialWord (e.g. word of the day).
 const initializeGame = (initialWord = null) => {
+  statsOpen.value = false
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
     // ensure word is valid for submission checks
@@ -134,10 +146,6 @@ const getTileState = (row, col) => {
   if (letter === answerArray[col]) return 'correct'
   if (answerArray.includes(letter)) return 'present'
   return 'wrong'
-}
-
-const getKeyStatus = (key) => {
-  return keyStates.value[key] || ''
 }
 
 const handleKeyPress = (key) => {
@@ -273,21 +281,42 @@ const showMessage = (msg, type) => {
   }, 2000)
 }
 
-const handlePhysicalKeyboard = (event) => {
+const shouldIgnoreKeydown = (event) => {
+  if (event.defaultPrevented) return true
+  if (event.ctrlKey || event.metaKey || event.altKey) return true
+
   const target = event.target
-
-  // If a dialog/overlay is open and focused, don't hijack keys
-  if (target && target.closest?.('.v-overlay-container')) return
-
-  // If user is typing in an input somewhere, don't hijack keys
   const tag = target?.tagName
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return true
 
-  const key = event.key.toUpperCase()
+  // Only block when YOUR stats dialog is open
+  if (statsOpen.value) return true
 
-  if (/^[A-Z]$/.test(key)) handleKeyPress(key)
-  else if (key === 'ENTER') handleKeyPress('ENTER')
-  else if (key === 'BACKSPACE') handleKeyPress('BACKSPACE')
+  return false
+}
+
+const handlePhysicalKeyboard = (event) => {
+  if (shouldIgnoreKeydown(event)) return
+  if (gameOver.value) return
+
+  const k = event.key
+
+  if (k === 'Enter') {
+    event.preventDefault()
+    handleKeyPress('ENTER')
+    return
+  }
+  if (k === 'Backspace') {
+    event.preventDefault()
+    handleKeyPress('BACKSPACE')
+    return
+  }
+
+  const letter = k.toUpperCase()
+  if (/^[A-Z]$/.test(letter)) {
+    event.preventDefault()
+    handleKeyPress(letter)
+  }
 }
 
 
@@ -451,73 +480,6 @@ const pushLettersAway = () => {
 .wordle-tile[data-state="wrong"] {
   background-color: #787c7e;
   border-color: #787c7e;
-  color: #ffffff;
-}
-
-/* Keyboard */
-.keyboard {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-  width: 100%;
-  max-width: 500px;
-}
-
-.keyboard-row {
-  display: flex;
-  gap: 6px;
-  justify-content: center;
-}
-
-.keyboard-row:nth-child(2) {
-  margin-left: 30px;
-}
-
-.keyboard-row:nth-child(3) {
-  margin-left: 60px;
-}
-
-.key-button {
-  flex: 1;
-  max-width: 40px;
-  padding: 10px;
-  height: 40px;
-  border: none;
-  border-radius: 4px;
-  background-color: #d3d6da;
-  color: #000000;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.key-button.key-special {
-  max-width: 60px;
-  font-size: 11px;
-}
-
-.key-button:hover {
-  background-color: #b0b5bc;
-}
-
-.key-button:active {
-  transform: scale(0.95);
-}
-
-.key-button[data-status="correct"] {
-  background-color: #6aaa64;
-  color: #ffffff;
-}
-
-.key-button[data-status="present"] {
-  background-color: #c9b458;
-  color: #ffffff;
-}
-
-.key-button[data-status="wrong"] {
-  background-color: #787c7e;
   color: #ffffff;
 }
 
