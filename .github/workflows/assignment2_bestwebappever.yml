@@ -25,7 +25,7 @@ jobs:
 
       - name: Build Vue app
         working-directory: ./wordle-game
-        run: npm run build
+        run: npm run export
 
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
@@ -37,6 +37,7 @@ jobs:
 
 
           
+
 
 
 
