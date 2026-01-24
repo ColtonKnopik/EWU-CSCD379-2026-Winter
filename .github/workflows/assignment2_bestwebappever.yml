@@ -40,7 +40,8 @@ jobs:
         with:
           app-name: 'BestWebAppEver'
           slot-name: 'Production'
-          package: .
+          package: Assignment2/wordle-game/dist
 
           
+
 
