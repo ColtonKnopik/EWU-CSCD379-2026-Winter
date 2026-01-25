@@ -20,6 +20,8 @@ jobs:
       - name: Build Vue app
         working-directory: ./wordle-game
         run: npm run generate
+      - name: Copy startup script
+        run: cp ./wordle-game/startup.sh ./wordle-game/.output/public/
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
