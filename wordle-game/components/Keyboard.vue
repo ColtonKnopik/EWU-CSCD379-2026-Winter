@@ -14,7 +14,6 @@
         >
             {{ k }}
         </v-btn>
-
     </div>
 
     <div class="kb-row">
@@ -125,26 +124,112 @@ const specialKeyStyle = {
 <style scoped>
 .kb {
   display: grid;
-  gap: 10px;
+  gap: 6px;
   user-select: none;
+  width: 100%;
+  max-width: 500px;
+  padding: 0 4px;
 }
 
 .kb-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   justify-content: center;
   flex-wrap: nowrap;
 }
 
 .kb-key {
-  min-width: 38px;
-  height: 48px;
+  min-width: 0 !important; /* Override Vuetify defaults */
+  flex: 1;
+  max-width: 43px;
+  height: 58px !important;
   font-weight: 700;
   text-transform: none;
+  padding: 0 !important;
+  font-size: 13px;
 }
 
-
 .kb-key--wide {
-  min-width: 74px;
+  flex: 1.5;
+  max-width: 65px;
+  font-size: 12px;
+}
+
+/* Tablet */
+@media (max-width: 768px) {
+  .kb {
+    gap: 5px;
+  }
+  
+  .kb-row {
+    gap: 5px;
+  }
+  
+  .kb-key {
+    max-width: 38px;
+    height: 52px !important;
+    font-size: 12px;
+  }
+  
+  .kb-key--wide {
+    max-width: 58px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .kb {
+    gap: 4px;
+    padding: 0 2px;
+  }
+  
+  .kb-row {
+    gap: 4px;
+  }
+  
+  .kb-key {
+    max-width: 32px;
+    height: 48px !important;
+    font-size: 11px;
+  }
+  
+  .kb-key--wide {
+    max-width: 50px;
+    font-size: 10px;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 400px) {
+  .kb {
+    gap: 3px;
+  }
+  
+  .kb-row {
+    gap: 3px;
+  }
+  
+  .kb-key {
+    max-width: 28px;
+    height: 44px !important;
+    font-size: 10px;
+  }
+  
+  .kb-key--wide {
+    max-width: 44px;
+    font-size: 9px;
+  }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+  .kb-key {
+    max-width: 26px;
+    height: 40px !important;
+  }
+  
+  .kb-key--wide {
+    max-width: 40px;
+  }
 }
 </style>
