@@ -78,14 +78,13 @@ const message = ref('')
 const messageType = ref('')
 const showHand = ref(false)
 const slapAudio = ref(null)
-
+const currentGameIsWOTD = ref(false) // ← NEW: Track if current game is WOTD
+const wotdDate = ref('') // ← NEW: Store the WOTD date
 
 // Map your existing keyStates into the shape <Keyboard /> expects
 const keyStatuses = computed(() => {
-  // expected: 'unused' | 'absent' | 'present' | 'correct'
   const out = {}
   for (const [k, v] of Object.entries(keyStates.value)) {
-    // your code uses: 'wrong' | 'present' | 'correct'
     if (v === 'correct') out[k] = 'correct'
     else if (v === 'present') out[k] = 'present'
     else if (v === 'wrong') out[k] = 'absent'
@@ -94,22 +93,24 @@ const keyStatuses = computed(() => {
 })
 
 function handleVirtualKey(key) {
-  // Keyboard.vue emits: 'ENTER', 'BACKSPACE', or 'A'..'Z'
   handleKeyPress(key)
 }
 
-// initializeGame optionally accepts an initialWord (e.g. word of the day).
-const initializeGame = (initialWord = null) => {
+// ← UPDATED: Added isWOTD parameter
+const initializeGame = (initialWord = null, isWOTD = false) => {
   statsOpen.value = false
+  
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
-    // ensure word is valid for submission checks
+    currentGameIsWOTD.value = isWOTD // ← NEW: Mark if this is WOTD
+    
     if (!VALID_WORDS.has(answer.value)) {
       WORD_LIST.push(answer.value)
       VALID_WORDS.add(answer.value)
     }
   } else {
     answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
+    currentGameIsWOTD.value = false // ← NEW: Not WOTD
   }
 
   board.value = Array(6).fill(null).map(() => Array(5).fill(''))
@@ -122,18 +123,13 @@ const initializeGame = (initialWord = null) => {
   message.value = ''
 }
 
-// Preload slap sound and play with low latency
-// Place `slap.mp3` at `public/sounds/slap.mp3`.
 const playSlap = () => {
   try {
     const a = slapAudio.value
     if (!a) return
-    // restart and play
     a.currentTime = 0
     a.play().catch(() => {})
-  } catch (e) {
-    // ignore playback errors
-  }
+  } catch (e) {}
 }
 
 const getTileState = (row, col) => {
@@ -175,13 +171,10 @@ const submitGuess = () => {
   }
 
   if (!VALID_WORDS.has(currentGuess.value)) {
-    // show hand and push letters away
     showHand.value = true
     pushLettersAway()
     showMessage('Not in word list', 'error')
-    // clear current guess so tiles visually removed
     currentGuess.value = ''
-    // hide hand after animation completes (match hand sweep duration)
     setTimeout(() => { showHand.value = false }, 1300)
     return
   }
@@ -231,9 +224,15 @@ const checkGuess = (guess) => {
     gameOver.value = true
     won.value = true
     showMessage('You won! 🎉', 'success')
+    
+    // ← NEW: Mark WOTD as played when won
+    if (currentGameIsWOTD.value && wotdDate.value) {
+      localStorage.setItem('wotd_last_played', wotdDate.value)
+    }
+    
     gameEnded(true, guesses.value.length)
     setTimeout(() => {
-      initializeGame()
+      initializeGame() // Next game is random
     }, 2000)
     return tileColors
   }
@@ -241,9 +240,15 @@ const checkGuess = (guess) => {
   if (guesses.value.length >= ROWS) {
     gameOver.value = true
     showMessage(`Game over! The word was ${answer.value}`, 'error')
+    
+    // ← NEW: Mark WOTD as played even when lost
+    if (currentGameIsWOTD.value && wotdDate.value) {
+      localStorage.setItem('wotd_last_played', wotdDate.value)
+    }
+    
     gameEnded(false, ROWS)
     setTimeout(() => {
-      initializeGame()
+      initializeGame() // Next game is random
     }, 2000)
   }
 
@@ -289,7 +294,6 @@ const shouldIgnoreKeydown = (event) => {
   const tag = target?.tagName
   if (tag === 'INPUT' || tag === 'TEXTAREA' || target?.isContentEditable) return true
 
-  // Only block when YOUR stats dialog is open
   if (statsOpen.value) return true
 
   return false
@@ -319,11 +323,9 @@ const handlePhysicalKeyboard = (event) => {
   }
 }
 
-
 onMounted(async () => {
   try {
     const [targets, valids] = await Promise.all([loadTargetWords(), loadValidWords()])
-    // targets -> WORD_LIST (answers), valids -> VALID_WORDS
     if (Array.isArray(targets) && targets.length) {
       WORD_LIST = targets
     }
@@ -335,15 +337,28 @@ onMounted(async () => {
     console.error('Failed to load word lists:', error)
   }
 
-  // Attempt to fetch Word of the Day (WOTD) and start with it. If fetch fails or invalid,
-  // fall back to a random word.
+  // ← UPDATED: Word of the Day logic with localStorage tracking
   try {
     const res = await fetch('/api/word_of_the_day')
     if (res.ok) {
       const data = await res.json()
       const w = (data?.word || '').toUpperCase()
+      const date = data?.date || new Date().toISOString().split('T')[0]
+      
       if (/^[A-Z]{5}$/.test(w)) {
-        initializeGame(w)
+        // Check if user already played today's WOTD
+        const lastPlayed = localStorage.getItem('wotd_last_played')
+        
+        if (lastPlayed === date) {
+          // Already played today's WOTD, start with random word
+          console.log('✓ Already played today\'s WOTD, starting with random word')
+          initializeGame()
+        } else {
+          // Haven't played today's WOTD yet
+          console.log('✓ Starting with Word of the Day:', w)
+          wotdDate.value = date
+          initializeGame(w, true) // Pass true to mark as WOTD
+        }
       } else {
         initializeGame()
       }
@@ -351,20 +366,20 @@ onMounted(async () => {
       initializeGame()
     }
   } catch (e) {
-    // If the API isn't available or errors, just initialize normally.
+    console.error('Failed to fetch WOTD:', e)
     initializeGame()
   }
-  // create and preload slap audio for lower-latency playback
+
+  // Preload slap audio
   try {
     const a = new Audio('/sounds/slap.mp3')
     a.preload = 'auto'
-    // optional: set volume if desired
-    // a.volume = 0.9
     a.load()
     slapAudio.value = a
   } catch (e) {
     console.warn('Failed to preload slap audio', e)
   }
+  
   window.addEventListener('keydown', handlePhysicalKeyboard)
 })
 
@@ -372,32 +387,25 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handlePhysicalKeyboard)
 })
 
-// Push letters off the board with animation
 const pushLettersAway = () => {
   const rowIndex = guesses.value.length
   const row = document.querySelectorAll('.game-board .wordle-row')[rowIndex]
   if (!row) return
 
-  // For each tile in the current row, add a class that triggers CSS animation
   const tiles = row.querySelectorAll('.wordle-tile')
   tiles.forEach((tile, idx) => {
     tile.classList.add('push-away')
-    // stagger
     tile.style.transitionDelay = `${idx * 60}ms`
   })
 
-  // play slap sound at start of animation
   playSlap()
 
-  // After animation, clear those tiles visually
   setTimeout(() => {
-    // remove animation class and inline delay
     tiles.forEach(tile => {
       tile.classList.remove('push-away')
       tile.style.transitionDelay = ''
     })
 
-    // update reactive board state for this row so Vue re-renders and input works
     const idx = rowIndex
     if (board.value && board.value[idx]) {
       board.value[idx] = Array(tiles.length).fill('')
