@@ -1,5 +1,4 @@
 <template>
-  
   <NuxtRouteAnnouncer />
 
   <!-- Page layout -->
@@ -35,7 +34,6 @@
             @press="handleVirtualKey"
           />
 
-
           <!-- Game Status Message -->
           <div v-if="message" class="message" :class="messageType">
             {{ message }}
@@ -43,21 +41,28 @@
         </div>
       </v-col>
     </v-row>
-    
-   
 
     <!-- Hand animation (shown on invalid guess) -->
     <div v-if="showHand" class="hand-container">
       <img src="/images/hand.png" alt="hand" class="hand-image" />
     </div>
+
+    <!-- Result Modal Component -->
+    <GameResultModal
+      v-model="showResultModal"
+      :won="won"
+      :word="answer"
+      :guess-count="guesses.length"
+      @close="handleModalClose"
+    />
   </v-container>
-  
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { loadTargetWords, loadValidWords, loadWordsFromFile } from '~/utils/wordLoader'
+import { loadTargetWords, loadValidWords } from '~/utils/wordLoader'
 import Keyboard from '~/components/Keyboard.vue'
+import GameResultModal from '~/components/GameResultModal.vue'
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
@@ -78,10 +83,10 @@ const message = ref('')
 const messageType = ref('')
 const showHand = ref(false)
 const slapAudio = ref(null)
-const currentGameIsWOTD = ref(false) // ← NEW: Track if current game is WOTD
-const wotdDate = ref('') // ← NEW: Store the WOTD date
+const currentGameIsWOTD = ref(false)
+const wotdDate = ref('')
+const showResultModal = ref(false)
 
-// Map your existing keyStates into the shape <Keyboard /> expects
 const keyStatuses = computed(() => {
   const out = {}
   for (const [k, v] of Object.entries(keyStates.value)) {
@@ -96,13 +101,12 @@ function handleVirtualKey(key) {
   handleKeyPress(key)
 }
 
-// ← UPDATED: Added isWOTD parameter
 const initializeGame = (initialWord = null, isWOTD = false) => {
   statsOpen.value = false
   
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
-    currentGameIsWOTD.value = isWOTD // ← NEW: Mark if this is WOTD
+    currentGameIsWOTD.value = isWOTD
     
     if (!VALID_WORDS.has(answer.value)) {
       WORD_LIST.push(answer.value)
@@ -110,7 +114,7 @@ const initializeGame = (initialWord = null, isWOTD = false) => {
     }
   } else {
     answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
-    currentGameIsWOTD.value = false // ← NEW: Not WOTD
+    currentGameIsWOTD.value = false
   }
 
   board.value = Array(6).fill(null).map(() => Array(5).fill(''))
@@ -121,6 +125,14 @@ const initializeGame = (initialWord = null, isWOTD = false) => {
   guessedLetters.value = new Set()
   keyStates.value = {}
   message.value = ''
+}
+
+const handleModalClose = () => {
+  showResultModal.value = false
+  
+  setTimeout(() => {
+    initializeGame()
+  }, 300) 
 }
 
 const playSlap = () => {
@@ -223,47 +235,29 @@ const checkGuess = (guess) => {
   if (guess === answer.value) {
     gameOver.value = true
     won.value = true
-    showMessage('You won! 🎉', 'success')
     
-    // ← NEW: Mark WOTD as played when won
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
     
     gameEnded(true, guesses.value.length)
-    setTimeout(() => {
-      initializeGame() // Next game is random
-    }, 2000)
+    showResultModal.value = true
+    
     return tileColors
   }
 
   if (guesses.value.length >= ROWS) {
     gameOver.value = true
-    showMessage(`Game over! The word was ${answer.value}`, 'error')
     
-    // ← NEW: Mark WOTD as played even when lost
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
     
     gameEnded(false, ROWS)
-    setTimeout(() => {
-      initializeGame() // Next game is random
-    }, 2000)
+    showResultModal.value = true
   }
 
   return tileColors
-}
-
-const resetGame = () => {
-  answer.value = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)]
-  board.value = Array(6).fill(null).map(() => Array(5).fill(''))
-  guesses.value = []
-  currentGuess.value = ''
-  gameOver.value = false
-  won.value = false
-  guessedLetters.value = new Set()
-  keyStates.value = {}
 }
 
 const gameEnded = (wonFlag, guessesCount) => {
@@ -337,7 +331,6 @@ onMounted(async () => {
     console.error('Failed to load word lists:', error)
   }
 
-  // ← UPDATED: Word of the Day logic with localStorage tracking
   try {
     const res = await fetch('/api/word_of_the_day')
     if (res.ok) {
@@ -346,18 +339,15 @@ onMounted(async () => {
       const date = data?.date || new Date().toISOString().split('T')[0]
       
       if (/^[A-Z]{5}$/.test(w)) {
-        // Check if user already played today's WOTD
         const lastPlayed = localStorage.getItem('wotd_last_played')
         
         if (lastPlayed === date) {
-          // Already played today's WOTD, start with random word
           console.log('✓ Already played today\'s WOTD, starting with random word')
           initializeGame()
         } else {
-          // Haven't played today's WOTD yet
           console.log('✓ Starting with Word of the Day:', w)
           wotdDate.value = date
-          initializeGame(w, true) // Pass true to mark as WOTD
+          initializeGame(w, true)
         }
       } else {
         initializeGame()
@@ -370,7 +360,6 @@ onMounted(async () => {
     initializeGame()
   }
 
-  // Preload slap audio
   try {
     const a = new Audio('/sounds/slap.mp3')
     a.preload = 'auto'
