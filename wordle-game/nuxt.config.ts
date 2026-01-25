@@ -8,6 +8,11 @@ export default defineNuxtConfig({
     // Turn off SSR for static SPA
     ssr: false,
 
+    // Add this for static generation
+    nitro: {
+        preset: 'static'
+    },
+
     // Build settings
     build: {
         transpile: ['vuetify'],
@@ -35,7 +40,7 @@ export default defineNuxtConfig({
 
     // Base URL for static assets
     app: {
-        baseURL: '/',          // root path for deployment
-        buildAssetsDir: '_nuxt/' // default is fine
+        baseURL: '/',
+        buildAssetsDir: '_nuxt/'
     },
 })
