@@ -1,32 +1,25 @@
 name: Build and deploy Vue app to Azure Web App - BestWebAppEver
-
 on:
   push:
     branches:
       - Assignment2
   workflow_dispatch:
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
       - name: Install dependencies
         working-directory: ./wordle-game
-        run: npm install
-
+        run: npm ci
       - name: Build Vue app
         working-directory: ./wordle-game
-        run: npm run export
-
+        run: npm run generate
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
