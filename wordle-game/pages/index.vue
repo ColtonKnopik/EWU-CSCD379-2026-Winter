@@ -72,6 +72,9 @@ const statsOpen = useState('statsOpen', () => false)
 const WORD_LENGTH = 5
 
 const board = ref(Array(6).fill(null).map(() => Array(5).fill('')))
+// Persist per-tile feedback so duplicate-letter cases render correctly.
+// Each row is an array of 5 states: 'correct' | 'present' | 'wrong' | 'empty'
+const tileStates = ref(Array(6).fill(null).map(() => Array(5).fill('empty')))
 const guesses = ref([])
 const currentGuess = ref('')
 const gameOver = ref(false)
@@ -118,6 +121,7 @@ const initializeGame = (initialWord = null, isWOTD = false) => {
   }
 
   board.value = Array(6).fill(null).map(() => Array(5).fill(''))
+  tileStates.value = Array(6).fill(null).map(() => Array(5).fill('empty'))
   guesses.value = []
   currentGuess.value = ''
   gameOver.value = false
@@ -145,15 +149,9 @@ const playSlap = () => {
 }
 
 const getTileState = (row, col) => {
+  // Only show colors for submitted guesses. For the active typing row we keep tiles "empty".
   if (row >= guesses.value.length) return 'empty'
-
-  const guess = guesses.value[row]
-  const letter = guess[col]
-  const answerArray = answer.value.split('')
-
-  if (letter === answerArray[col]) return 'correct'
-  if (answerArray.includes(letter)) return 'present'
-  return 'wrong'
+  return tileStates.value?.[row]?.[col] ?? 'empty'
 }
 
 const handleKeyPress = (key) => {
@@ -199,6 +197,7 @@ const submitGuess = () => {
 const checkGuess = (guess) => {
   const ROWS = 6
   const COLS = 5
+  const rowIndex = guesses.value.length
 
   const wordArr = answer.value.split('')
   const guessArr = guess.split('')
@@ -220,6 +219,10 @@ const checkGuess = (guess) => {
     }
   }
 
+  if (tileStates.value?.[rowIndex]) {
+    tileStates.value[rowIndex] = [...tileColors]
+  }
+  
   guesses.value.push(guess)
 
   for (let i = 0; i < COLS; i++) {
