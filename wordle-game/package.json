@@ -8,7 +8,9 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "export": "nuxt build && nuxt generate"
+    "export": "nuxt build && nuxt generate",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -19,6 +21,8 @@
     "vuetify": "^3.11.7"
   },
   "devDependencies": {
-    "@types/node": "^25.0.10"
+    "@types/node": "^25.0.10",
+    "jsdom": "^27.4.0",
+    "vitest": "^4.0.18"
   }
 }

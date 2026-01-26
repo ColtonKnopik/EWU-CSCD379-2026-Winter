@@ -63,6 +63,13 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { loadTargetWords, loadValidWords } from '~/utils/wordLoader'
 import Keyboard from '~/components/Keyboard.vue'
 import GameResultModal from '~/components/GameResultModal.vue'
+import { usePlayerStats } from '~/composables/usePlayerStats'
+
+import {
+  evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors,
+  mergeKeyStates_PreviousAndNewFeedbackProvided_ReturnsBestStates
+} from '~/utils/wordleEngine'
+
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
@@ -72,6 +79,9 @@ const statsOpen = useState('statsOpen', () => false)
 const WORD_LENGTH = 5
 
 const board = ref(Array(6).fill(null).map(() => Array(5).fill('')))
+// Persist per-tile feedback so duplicate-letter cases render correctly.
+// Each row is an array of 5 states: 'correct' | 'present' | 'wrong' | 'empty'
+const tileStates = ref(Array(6).fill(null).map(() => Array(5).fill('empty')))
 const guesses = ref([])
 const currentGuess = ref('')
 const gameOver = ref(false)
@@ -86,6 +96,10 @@ const slapAudio = ref(null)
 const currentGameIsWOTD = ref(false)
 const wotdDate = ref('')
 const showResultModal = ref(false)
+const { recordGame, load: loadStats } = usePlayerStats()
+// Prevent double-recording if something triggers end logic twice
+const statsRecorded = ref(false)
+
 
 const keyStatuses = computed(() => {
   const out = {}
@@ -103,6 +117,7 @@ function handleVirtualKey(key) {
 
 const initializeGame = (initialWord = null, isWOTD = false) => {
   statsOpen.value = false
+  statsRecorded.value = false
   
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
@@ -118,6 +133,7 @@ const initializeGame = (initialWord = null, isWOTD = false) => {
   }
 
   board.value = Array(6).fill(null).map(() => Array(5).fill(''))
+  tileStates.value = Array(6).fill(null).map(() => Array(5).fill('empty'))
   guesses.value = []
   currentGuess.value = ''
   gameOver.value = false
@@ -145,15 +161,9 @@ const playSlap = () => {
 }
 
 const getTileState = (row, col) => {
+  // Only show colors for submitted guesses. For the active typing row we keep tiles "empty".
   if (row >= guesses.value.length) return 'empty'
-
-  const guess = guesses.value[row]
-  const letter = guess[col]
-  const answerArray = answer.value.split('')
-
-  if (letter === answerArray[col]) return 'correct'
-  if (answerArray.includes(letter)) return 'present'
-  return 'wrong'
+  return tileStates.value?.[row]?.[col] ?? 'empty'
 }
 
 const handleKeyPress = (key) => {
@@ -198,61 +208,46 @@ const submitGuess = () => {
 
 const checkGuess = (guess) => {
   const ROWS = 6
-  const COLS = 5
+  const rowIndex = guesses.value.length
 
-  const wordArr = answer.value.split('')
-  const guessArr = guess.split('')
-  const tileColors = Array(COLS).fill('wrong')
+  // Evaluate tiles (NYT rules)
+  const tileColors = evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors(answer.value, guess)
 
-  for (let i = 0; i < COLS; i++) {
-    if (guessArr[i] === wordArr[i]) {
-      tileColors[i] = 'correct'
-      wordArr[i] = null
-    }
-  }
-
-  for (let i = 0; i < COLS; i++) {
-    if (tileColors[i] === 'correct') continue
-    const idx = wordArr.indexOf(guessArr[i])
-    if (idx !== -1) {
-      tileColors[i] = 'present'
-      wordArr[idx] = null
-    }
+  // Save tile colors for this row
+  if (tileStates.value?.[rowIndex]) {
+    tileStates.value[rowIndex] = [...tileColors]
   }
 
   guesses.value.push(guess)
 
-  for (let i = 0; i < COLS; i++) {
-    const letter = guessArr[i]
-    const color = tileColors[i]
-    const prev = keyStates.value[letter]
-    if (prev === 'correct') continue
-    if (color === 'correct') keyStates.value[letter] = 'correct'
-    else if (color === 'present' && prev !== 'present') keyStates.value[letter] = 'present'
-    else if (!prev) keyStates.value[letter] = 'wrong'
-  }
+  // Update keyboard with "best color wins"
+  keyStates.value = mergeKeyStates_PreviousAndNewFeedbackProvided_ReturnsBestStates(
+    keyStates.value,
+    guess,
+    tileColors
+  )
 
+  // win/lose logic 
   if (guess === answer.value) {
     gameOver.value = true
     won.value = true
-    
+
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
-    
+
     gameEnded(true, guesses.value.length)
     showResultModal.value = true
-    
     return tileColors
   }
 
   if (guesses.value.length >= ROWS) {
     gameOver.value = true
-    
+
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
-    
+
     gameEnded(false, ROWS)
     showResultModal.value = true
   }
@@ -260,16 +255,11 @@ const checkGuess = (guess) => {
   return tileColors
 }
 
+
 const gameEnded = (wonFlag, guessesCount) => {
-  fetch('/games/wordle/update_stats', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ won: wonFlag, guesses: guessesCount })
-  })
-    .then(res => res.json())
-    .then(stats => {
-      console.log('stats updated', stats)
-    }).catch(() => {})
+  if (statsRecorded.value) return
+  statsRecorded.value = true
+  recordGame({ won: wonFlag, guesses: guessesCount })
 }
 
 const showMessage = (msg, type) => {
@@ -318,6 +308,8 @@ const handlePhysicalKeyboard = (event) => {
 }
 
 onMounted(async () => {
+  loadStats()
+
   try {
     const [targets, valids] = await Promise.all([loadTargetWords(), loadValidWords()])
     if (Array.isArray(targets) && targets.length) {

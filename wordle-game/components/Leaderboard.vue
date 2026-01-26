@@ -1,14 +1,11 @@
 <template>
-  <v-dialog
-    v-model="dialog"
-    max-width="520"
-    scrollable
-  >
+  <v-dialog v-model="dialog" max-width="520" scrollable>
     <v-card>
       <v-card-title class="d-flex align-center justify-space-between">
         <div class="d-flex align-center ga-2">
+          <!-- keep trophy icon -->
           <v-icon icon="mdi-trophy-outline" />
-          <span>{{ title }}</span>
+          <span class="dialog-title">{{ title }}</span>
         </div>
 
         <v-btn icon variant="text" aria-label="Close" @click="dialog = false">
@@ -24,80 +21,87 @@
           <span>Loading stats…</span>
         </div>
 
-        <v-alert
-          v-else-if="error"
-          type="error"
-          variant="tonal"
-          class="mb-4"
-        >
+        <v-alert v-else-if="error" type="error" variant="tonal" class="mb-4">
           {{ error }}
           <div class="mt-3">
-            <v-btn size="small" variant="outlined" @click="fetchStats">
+            <v-btn size="small" variant="outlined" @click="refreshStats">
               Retry
             </v-btn>
           </div>
         </v-alert>
 
         <div v-else>
-          <v-row dense>
-            <v-col cols="6">
-              <StatTile label="Games" :value="stats.gamesPlayed" icon="mdi-gamepad-variant-outline" />
-            </v-col>
-            <v-col cols="6">
-              <StatTile label="Win rate" :value="formatPercent(stats.winRate)" icon="mdi-percent" />
-            </v-col>
-            <v-col cols="6">
-              <StatTile label="Wins" :value="stats.wins" icon="mdi-check-circle-outline" />
-            </v-col>
-            <v-col cols="6">
-              <StatTile label="Losses" :value="stats.losses" icon="mdi-close-circle-outline" />
-            </v-col>
-            <v-col cols="6">
-              <StatTile label="Current streak" :value="stats.currentStreak" icon="mdi-fire" />
-            </v-col>
-            <v-col cols="6">
-              <StatTile label="Max streak" :value="stats.maxStreak" icon="mdi-trophy-award" />
-            </v-col>
-          </v-row>
+          <!-- Wordle-style STATISTICS header + 4-up row -->
+          
 
-          <div class="mt-4">
-            <div class="d-flex align-center justify-space-between mb-2">
-              <span class="text-subtitle-2">Win rate</span>
-              <span class="text-caption">{{ formatPercent(stats.winRate) }}</span>
+          <div class="stats-row">
+            <div class="stat">
+              <div class="stat-number text-high-emphasis">{{ stats.gamesPlayed }}</div>
+              <div class="stat-label text-medium-emphasis">Played</div>
             </div>
 
-            <v-progress-linear
-              :model-value="clamp01(stats.winRate) * 100"
-              height="10"
-              rounded
-            />
+            <div class="stat">
+              <div class="stat-number text-high-emphasis">{{ formatPercent(stats.winRate) }}</div>
+              <div class="stat-label text-medium-emphasis">Win %</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-number text-high-emphasis">{{ stats.currentStreak }}</div>
+              <div class="stat-label text-medium-emphasis">Current Streak</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-number text-high-emphasis">{{ stats.maxStreak }}</div>
+              <div class="stat-label text-medium-emphasis">Max Streak</div>
+            </div>
+          </div>
+          
+          <!-- Divider between top stats and extras -->
+          <v-divider class="my-3" />
+
+          <!-- Extras row (assignment-required visibility) -->
+          <div class="extras-row">
+            <div class="extra">
+              <div class="extra-number text-high-emphasis">{{ stats.wins }}</div>
+              <div class="extra-label text-medium-emphasis">Wins</div>
+            </div>
+
+            <div class="extra">
+              <div class="extra-number text-high-emphasis">{{ stats.losses }}</div>
+              <div class="extra-label text-medium-emphasis">Losses</div>
+            </div>
+
+            <div class="extra">
+              <div class="extra-number text-high-emphasis">{{ formatAvgAttempts(stats.avgAttempts) }}</div>
+              <div class="extra-label text-medium-emphasis">Avg Win Guesses</div>
+            </div>
           </div>
 
-          <div v-if="stats.guessDistribution?.length" class="mt-6">
-            <div class="text-subtitle-2 mb-2">Guess distribution</div>
+          <div class="stats-divider" />
 
-            <div class="d-flex flex-column ga-2">
-              <div
-                v-for="(count, idx) in stats.guessDistribution"
-                :key="idx"
-                class="d-flex align-center ga-2"
-              >
-                <div class="text-caption" style="width: 18px;">
-                  {{ idx + 1 }}
-                </div>
+          <div class="dist-header">GUESS DISTRIBUTION</div>
 
-                <v-progress-linear
-                  :model-value="distributionPercent(count)"
-                  height="10"
-                  rounded
-                />
+          <div class="dist">
+            <div
+              v-for="(count, idx) in stats.guessDistribution"
+              :key="idx"
+              class="dist-row"
+            >
+              <div class="dist-label text-high-emphasis">{{ idx + 1 }}</div>
 
-                <div class="text-caption" style="width: 28px; text-align: right;">
-                  {{ count }}
+              <div class="dist-bar-wrap">
+                <div
+                  class="dist-bar"
+                  :class="{ 'dist-bar-empty': count === 0 }"
+                  :style="{ width: `${distributionPercent(count)}%` }"
+                >
+                  <!-- Hide zeros -->
+                  <span class="dist-count" v-if="count > 0">{{ count }}</span>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       </v-card-text>
 
@@ -105,41 +109,24 @@
 
       <v-card-actions class="justify-end">
         <v-btn variant="text" @click="dialog = false">Close</v-btn>
-        <v-btn variant="outlined" @click="fetchStats">Refresh</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-
-/**
- * Update this to match your backend response.
- * This version is intentionally small + common for Wordle.
- */
-type WordleStats = {
-  wins: number
-  losses: number
-  gamesPlayed: number
-  winRate: number // 0..1
-  currentStreak: number
-  maxStreak: number
-  guessDistribution?: number[] // length 6 (optional)
-}
+import { computed, ref, watch, onMounted } from 'vue'
+import { usePlayerStats } from '~/composables/usePlayerStats'
 
 type Props = {
   modelValue: boolean
   title?: string
-  /** Endpoint to fetch stats from (GET). */
-  statsEndpoint?: string
-  /** Fetch stats each time the dialog opens. */
   refreshOnOpen?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: 'Player Stats',
-  statsEndpoint: '/games/wordle/stats',
+  // Wordle-like title
+  title: 'Statistics',
   refreshOnOpen: true,
 })
 
@@ -153,63 +140,44 @@ const dialog = computed<boolean>({
 })
 
 const loading = ref(false)
-const error = ref<string>('')
-const stats = ref<WordleStats>({
-  wins: 0,
-  losses: 0,
-  gamesPlayed: 0,
-  winRate: 0,
-  currentStreak: 0,
-  maxStreak: 0,
-  guessDistribution: [],
-})
+const error = ref('')
 
-const fetchStats = async () => {
+// local stats
+const { stats: raw, load, winRate, avgAttempts } = usePlayerStats()
+
+const stats = computed(() => ({
+  wins: raw.value.wins,
+  losses: raw.value.losses,
+  gamesPlayed: raw.value.gamesPlayed,
+  winRate: winRate.value,
+  currentStreak: raw.value.currentStreak,
+  maxStreak: raw.value.maxStreak,
+  guessDistribution: raw.value.guessDistribution,
+  avgAttempts: avgAttempts.value,
+}))
+
+const refreshStats = () => {
   loading.value = true
   error.value = ''
-
   try {
-    // Nuxt $fetch works client-side and respects baseURL/runtime config if you use it
-    const res = await $fetch<WordleStats>(props.statsEndpoint, { method: 'GET' })
-    stats.value = normalizeStats(res)
-  } catch (e: unknown) {
-    // Keep it user-friendly
-    error.value =
-      'Could not load stats. Confirm the stats endpoint exists and returns JSON.'
+    load()
+  } catch {
+    error.value = 'Could not load local stats.'
   } finally {
     loading.value = false
   }
 }
 
+onMounted(() => {
+  refreshStats()
+})
+
 watch(
   () => dialog.value,
   (open) => {
-    if (open && props.refreshOnOpen) {
-      void fetchStats()
-    }
+    if (open && props.refreshOnOpen) refreshStats()
   }
 )
-
-function normalizeStats(input: WordleStats): WordleStats {
-  const gamesPlayed = input.gamesPlayed ?? (input.wins + input.losses)
-  const winRate =
-    typeof input.winRate === 'number'
-      ? input.winRate
-      : gamesPlayed > 0
-        ? input.wins / gamesPlayed
-        : 0
-
-  return {
-    ...input,
-    gamesPlayed,
-    winRate: clamp01(winRate),
-    wins: input.wins ?? 0,
-    losses: input.losses ?? 0,
-    currentStreak: input.currentStreak ?? 0,
-    maxStreak: input.maxStreak ?? 0,
-    guessDistribution: input.guessDistribution ?? [],
-  }
-}
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0
@@ -222,34 +190,116 @@ function formatPercent(rate01: number): string {
 }
 
 function distributionPercent(count: number): number {
-  const max = Math.max(...(stats.value.guessDistribution ?? [0]), 1)
-  return (count / max) * 100
+  const dist = stats.value.guessDistribution ?? []
+  const max = Math.max(...dist, 1)
+
+  // Wordle shows no bar for 0
+  if (count <= 0) return 0
+
+  const pct = (count / max) * 100
+  // Ensure small counts are still visible like Wordle
+  return Math.max(6, pct)
+}
+
+function formatAvgAttempts(n: number): string {
+  // Show "-" when not calculable yet (no wins)
+  if (!Number.isFinite(n) || n <= 0) return '-'
+  return n.toFixed(2)
 }
 </script>
 
-<script lang="ts">
-// Local subcomponent for clean stat tiles
-import { defineComponent } from 'vue'
+<style scoped>
+/* Wordle-ish title feel (while keeping your layout) */
+.dialog-title {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  font-size: 20px;
+}
 
-export default defineComponent({
-  name: 'LeaderboardDialog',
-})
+.stats-header {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 18px;
+  margin-bottom: 10px;
+}
 
-export const StatTile = defineComponent({
-  name: 'StatTile',
-  props: {
-    label: { type: String, required: true },
-    value: { type: [String, Number], required: true },
-    icon: { type: String, required: false, default: '' },
-  },
-  template: `
-    <v-card variant="tonal" class="pa-3">
-      <div class="d-flex align-center ga-2">
-        <v-icon v-if="icon" :icon="icon" />
-        <div class="text-caption">{{ label }}</div>
-      </div>
-      <div class="text-h6 mt-1">{{ value }}</div>
-    </v-card>
-  `,
-})
-</script>
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.stat-number {
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.extras-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+.extra-number {
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.stats-divider {
+  height: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.12);
+  margin: 8px 0 14px;
+}
+
+.dist-header {
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.dist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dist-row {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.dist-bar-wrap {
+  width: 100%;
+}
+
+/* Wordle bar */
+.dist-bar {
+  height: 18px;
+  background: #787c7e; /* Wordle gray */
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  min-width: 0;
+}
+
+/* When width is 0, prevent any weird padding/size artifacts */
+.dist-bar-empty {
+  padding-right: 0;
+}
+
+.dist-count {
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+}
+</style>
