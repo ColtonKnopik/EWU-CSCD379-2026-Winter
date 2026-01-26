@@ -65,6 +65,12 @@ import Keyboard from '~/components/Keyboard.vue'
 import GameResultModal from '~/components/GameResultModal.vue'
 import { usePlayerStats } from '~/composables/usePlayerStats'
 
+import {
+  evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors,
+  mergeKeyStates_PreviousAndNewFeedbackProvided_ReturnsBestStates
+} from '~/utils/wordleEngine'
+
+
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
 
@@ -202,72 +208,53 @@ const submitGuess = () => {
 
 const checkGuess = (guess) => {
   const ROWS = 6
-  const COLS = 5
   const rowIndex = guesses.value.length
 
-  const wordArr = answer.value.split('')
-  const guessArr = guess.split('')
-  const tileColors = Array(COLS).fill('wrong')
+  // Evaluate tiles (NYT rules)
+  const tileColors = evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors(answer.value, guess)
 
-  for (let i = 0; i < COLS; i++) {
-    if (guessArr[i] === wordArr[i]) {
-      tileColors[i] = 'correct'
-      wordArr[i] = null
-    }
-  }
-
-  for (let i = 0; i < COLS; i++) {
-    if (tileColors[i] === 'correct') continue
-    const idx = wordArr.indexOf(guessArr[i])
-    if (idx !== -1) {
-      tileColors[i] = 'present'
-      wordArr[idx] = null
-    }
-  }
-
+  // Save tile colors for this row
   if (tileStates.value?.[rowIndex]) {
     tileStates.value[rowIndex] = [...tileColors]
   }
 
   guesses.value.push(guess)
 
-  for (let i = 0; i < COLS; i++) {
-    const letter = guessArr[i]
-    const color = tileColors[i]
-    const prev = keyStates.value[letter]
-    if (prev === 'correct') continue
-    if (color === 'correct') keyStates.value[letter] = 'correct'
-    else if (color === 'present' && prev !== 'present') keyStates.value[letter] = 'present'
-    else if (!prev) keyStates.value[letter] = 'wrong'
-  }
+  // Update keyboard with "best color wins"
+  keyStates.value = mergeKeyStates_PreviousAndNewFeedbackProvided_ReturnsBestStates(
+    keyStates.value,
+    guess,
+    tileColors
+  )
 
+  // win/lose logic 
   if (guess === answer.value) {
     gameOver.value = true
     won.value = true
-    
+
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
-    
+
     gameEnded(true, guesses.value.length)
     showResultModal.value = true
-    
     return tileColors
   }
 
   if (guesses.value.length >= ROWS) {
     gameOver.value = true
-    
+
     if (currentGameIsWOTD.value && wotdDate.value) {
       localStorage.setItem('wotd_last_played', wotdDate.value)
     }
-    
+
     gameEnded(false, ROWS)
     showResultModal.value = true
   }
 
   return tileColors
 }
+
 
 const gameEnded = (wonFlag, guessesCount) => {
   if (statsRecorded.value) return

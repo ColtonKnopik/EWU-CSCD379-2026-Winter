@@ -29,7 +29,7 @@ The purpose of this assignment is to solidify your learning of:
 - Count wins, losses, and average attempts (words to win) ✅
 - Create a hint generator! :D ❌
 
-- Extra Credit: for cool features you implement
+- Extra Credit: for cool features you implement ✅
 
 Resources:
 - Azure: https://azure.microsoft.com/en-us/free/students (You should be able to get a subscription for some resources for free (everything we use here should be free, but be careful). Reach out to Josh or Grant if you have trouble.)
