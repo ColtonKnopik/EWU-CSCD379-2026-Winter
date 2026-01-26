@@ -63,6 +63,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { loadTargetWords, loadValidWords } from '~/utils/wordLoader'
 import Keyboard from '~/components/Keyboard.vue'
 import GameResultModal from '~/components/GameResultModal.vue'
+import { usePlayerStats } from '~/composables/usePlayerStats'
 
 let WORD_LIST = ['CRANE', 'SLANT', 'STARE', 'SLATE', 'PRANK', 'FLASH', 'TRAIN', 'PLANT', 'STORM', 'SHOUT']
 let VALID_WORDS = new Set(WORD_LIST)
@@ -89,6 +90,10 @@ const slapAudio = ref(null)
 const currentGameIsWOTD = ref(false)
 const wotdDate = ref('')
 const showResultModal = ref(false)
+const { recordGame, load: loadStats } = usePlayerStats()
+// Prevent double-recording if something triggers end logic twice
+const statsRecorded = ref(false)
+
 
 const keyStatuses = computed(() => {
   const out = {}
@@ -106,6 +111,7 @@ function handleVirtualKey(key) {
 
 const initializeGame = (initialWord = null, isWOTD = false) => {
   statsOpen.value = false
+  statsRecorded.value = false
   
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
@@ -222,7 +228,7 @@ const checkGuess = (guess) => {
   if (tileStates.value?.[rowIndex]) {
     tileStates.value[rowIndex] = [...tileColors]
   }
-  
+
   guesses.value.push(guess)
 
   for (let i = 0; i < COLS; i++) {
@@ -264,15 +270,9 @@ const checkGuess = (guess) => {
 }
 
 const gameEnded = (wonFlag, guessesCount) => {
-  fetch('/games/wordle/update_stats', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ won: wonFlag, guesses: guessesCount })
-  })
-    .then(res => res.json())
-    .then(stats => {
-      console.log('stats updated', stats)
-    }).catch(() => {})
+  if (statsRecorded.value) return
+  statsRecorded.value = true
+  recordGame({ won: wonFlag, guesses: guessesCount })
 }
 
 const showMessage = (msg, type) => {
@@ -321,6 +321,8 @@ const handlePhysicalKeyboard = (event) => {
 }
 
 onMounted(async () => {
+  loadStats()
+
   try {
     const [targets, valids] = await Promise.all([loadTargetWords(), loadValidWords()])
     if (Array.isArray(targets) && targets.length) {

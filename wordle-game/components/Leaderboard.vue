@@ -32,7 +32,7 @@
         >
           {{ error }}
           <div class="mt-3">
-            <v-btn size="small" variant="outlined" @click="fetchStats">
+            <v-btn size="small" variant="outlined" @click="refreshStats">
               Retry
             </v-btn>
           </div>
@@ -57,6 +57,9 @@
             </v-col>
             <v-col cols="6">
               <StatTile label="Max streak" :value="stats.maxStreak" icon="mdi-trophy-award" />
+            </v-col>
+            <v-col cols="6">
+              <StatTile label="Avg attempts" :value="formatAvgAttempts(stats.avgAttempts)" icon="mdi-counter" />
             </v-col>
           </v-row>
 
@@ -105,7 +108,7 @@
 
       <v-card-actions class="justify-end">
         <v-btn variant="text" @click="dialog = false">Close</v-btn>
-        <v-btn variant="outlined" @click="fetchStats">Refresh</v-btn>
+        <v-btn variant="outlined" @click="refreshStats">Refresh</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -113,33 +116,16 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-
-/**
- * Update this to match your backend response.
- * This version is intentionally small + common for Wordle.
- */
-type WordleStats = {
-  wins: number
-  losses: number
-  gamesPlayed: number
-  winRate: number // 0..1
-  currentStreak: number
-  maxStreak: number
-  guessDistribution?: number[] // length 6 (optional)
-}
+import { usePlayerStats } from '~/composables/usePlayerStats'
 
 type Props = {
   modelValue: boolean
   title?: string
-  /** Endpoint to fetch stats from (GET). */
-  statsEndpoint?: string
-  /** Fetch stats each time the dialog opens. */
   refreshOnOpen?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   title: 'Player Stats',
-  statsEndpoint: '/games/wordle/stats',
   refreshOnOpen: true,
 })
 
@@ -154,28 +140,28 @@ const dialog = computed<boolean>({
 
 const loading = ref(false)
 const error = ref<string>('')
-const stats = ref<WordleStats>({
-  wins: 0,
-  losses: 0,
-  gamesPlayed: 0,
-  winRate: 0,
-  currentStreak: 0,
-  maxStreak: 0,
-  guessDistribution: [],
-})
 
-const fetchStats = async () => {
+// local stats
+const { stats: raw, load, reset, winRate, avgAttempts } = usePlayerStats()
+
+const stats = computed(() => ({
+  wins: raw.value.wins,
+  losses: raw.value.losses,
+  gamesPlayed: raw.value.gamesPlayed,
+  winRate: winRate.value,
+  currentStreak: raw.value.currentStreak,
+  maxStreak: raw.value.maxStreak,
+  guessDistribution: raw.value.guessDistribution,
+  avgAttempts: avgAttempts.value,
+}))
+
+const refreshStats = () => {
   loading.value = true
   error.value = ''
-
   try {
-    // Nuxt $fetch works client-side and respects baseURL/runtime config if you use it
-    const res = await $fetch<WordleStats>(props.statsEndpoint, { method: 'GET' })
-    stats.value = normalizeStats(res)
-  } catch (e: unknown) {
-    // Keep it user-friendly
-    error.value =
-      'Could not load stats. Confirm the stats endpoint exists and returns JSON.'
+    load()
+  } catch {
+    error.value = 'Could not load local stats.'
   } finally {
     loading.value = false
   }
@@ -184,32 +170,9 @@ const fetchStats = async () => {
 watch(
   () => dialog.value,
   (open) => {
-    if (open && props.refreshOnOpen) {
-      void fetchStats()
-    }
+    if (open && props.refreshOnOpen) refreshStats()
   }
 )
-
-function normalizeStats(input: WordleStats): WordleStats {
-  const gamesPlayed = input.gamesPlayed ?? (input.wins + input.losses)
-  const winRate =
-    typeof input.winRate === 'number'
-      ? input.winRate
-      : gamesPlayed > 0
-        ? input.wins / gamesPlayed
-        : 0
-
-  return {
-    ...input,
-    gamesPlayed,
-    winRate: clamp01(winRate),
-    wins: input.wins ?? 0,
-    losses: input.losses ?? 0,
-    currentStreak: input.currentStreak ?? 0,
-    maxStreak: input.maxStreak ?? 0,
-    guessDistribution: input.guessDistribution ?? [],
-  }
-}
 
 function clamp01(n: number): number {
   if (!Number.isFinite(n)) return 0
@@ -225,31 +188,10 @@ function distributionPercent(count: number): number {
   const max = Math.max(...(stats.value.guessDistribution ?? [0]), 1)
   return (count / max) * 100
 }
+
+function formatAvgAttempts(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '—'
+  return n.toFixed(2)
+}
 </script>
 
-<script lang="ts">
-// Local subcomponent for clean stat tiles
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  name: 'LeaderboardDialog',
-})
-
-export const StatTile = defineComponent({
-  name: 'StatTile',
-  props: {
-    label: { type: String, required: true },
-    value: { type: [String, Number], required: true },
-    icon: { type: String, required: false, default: '' },
-  },
-  template: `
-    <v-card variant="tonal" class="pa-3">
-      <div class="d-flex align-center ga-2">
-        <v-icon v-if="icon" :icon="icon" />
-        <div class="text-caption">{{ label }}</div>
-      </div>
-      <div class="text-h6 mt-1">{{ value }}</div>
-    </v-card>
-  `,
-})
-</script>
