@@ -559,7 +559,7 @@ const pushLettersAway = () => {
 .hand-container {
   position: fixed;
   left: 50%;
-  bottom: 40px;
+  bottom: 10px;
   transform: translateX(-50%);
   pointer-events: none;
   z-index: 200;
@@ -576,7 +576,7 @@ const pushLettersAway = () => {
 
 @keyframes hand-sweep-left {
   0% {
-    transform: rotate(40deg) scale(1.05);
+    transform: rotate(40deg) scale(2.0);
     opacity: 1;
   }
   60% {
