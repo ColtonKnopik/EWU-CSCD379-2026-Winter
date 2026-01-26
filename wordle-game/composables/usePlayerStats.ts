@@ -59,6 +59,7 @@ export function usePlayerStats() {
     if (typeof window === 'undefined') return
     const saved = safeParse(sessionStorage.getItem(STORAGE_KEY))
     stats.value = saved ?? defaultStats()
+    save()
   }
 
   const save = () => {
