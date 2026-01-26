@@ -64,6 +64,7 @@ import { loadTargetWords, loadValidWords } from '~/utils/wordLoader'
 import Keyboard from '~/components/Keyboard.vue'
 import GameResultModal from '~/components/GameResultModal.vue'
 import { usePlayerStats } from '~/composables/usePlayerStats'
+import { generateHint } from '~/utils/hintGenerator'
 
 import {
   evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors,
@@ -79,8 +80,6 @@ const statsOpen = useState('statsOpen', () => false)
 const WORD_LENGTH = 5
 
 const board = ref(Array(6).fill(null).map(() => Array(5).fill('')))
-// Persist per-tile feedback so duplicate-letter cases render correctly.
-// Each row is an array of 5 states: 'correct' | 'present' | 'wrong' | 'empty'
 const tileStates = ref(Array(6).fill(null).map(() => Array(5).fill('empty')))
 const guesses = ref([])
 const currentGuess = ref('')
@@ -97,9 +96,59 @@ const currentGameIsWOTD = ref(false)
 const wotdDate = ref('')
 const showResultModal = ref(false)
 const { recordGame, load: loadStats } = usePlayerStats()
-// Prevent double-recording if something triggers end logic twice
 const statsRecorded = ref(false)
 
+const hintsUsed = ref(0)
+const MAX_HINTS = 3
+const { registerHintHandler, unregisterHintHandler, setHintDisabled } = useHint()
+
+const provideHint = async () => {
+  if (gameOver.value || hintsUsed.value >= MAX_HINTS) {
+    showMessage('No more hints available!', 'error')
+    return
+  }
+  
+  hintsUsed.value++
+  
+  try {
+    const hintResult = await generateHint(
+      answer.value,
+      guesses.value.length,
+      guesses.value
+    )
+    
+    console.log('Hint result:', hintResult)
+    
+    const messageClass = hintResult.severity === 'strong' ? 'success' : 
+                        hintResult.severity === 'medium' ? 'info' : 'subtle'
+    
+    showMessage(`Hint ${hintsUsed.value}/${MAX_HINTS}: ${hintResult.text}`, messageClass)
+    
+    if (hintsUsed.value >= MAX_HINTS) {
+      setHintDisabled(true)
+    }
+  } catch (error) {
+    console.error('Error generating hint:', error)
+    
+    // Fallback to simple letter hint if API fails
+    const guessedLettersArray = Array.from(guessedLetters.value)
+    const unusedLetters = answer.value.split('').filter(letter => 
+      !guessedLettersArray.includes(letter)
+    )
+    
+    if (unusedLetters.length > 0) {
+      const hintLetter = unusedLetters[Math.floor(Math.random() * unusedLetters.length)]
+      showMessage(`Hint ${hintsUsed.value}/${MAX_HINTS}: The word contains "${hintLetter}"`, 'success')
+      guessedLetters.value.add(hintLetter)
+    } else {
+      showMessage('All letters have been revealed!', 'error')
+    }
+    
+    if (hintsUsed.value >= MAX_HINTS) {
+      setHintDisabled(true)
+    }
+  }
+}
 
 const keyStatuses = computed(() => {
   const out = {}
@@ -118,6 +167,8 @@ function handleVirtualKey(key) {
 const initializeGame = (initialWord = null, isWOTD = false) => {
   statsOpen.value = false
   statsRecorded.value = false
+  hintsUsed.value = 0
+  setHintDisabled(false)
   
   if (initialWord && typeof initialWord === 'string' && /^[A-Z]{5}$/.test(initialWord)) {
     answer.value = initialWord.toUpperCase()
@@ -161,7 +212,6 @@ const playSlap = () => {
 }
 
 const getTileState = (row, col) => {
-  // Only show colors for submitted guesses. For the active typing row we keep tiles "empty".
   if (row >= guesses.value.length) return 'empty'
   return tileStates.value?.[row]?.[col] ?? 'empty'
 }
@@ -210,24 +260,20 @@ const checkGuess = (guess) => {
   const ROWS = 6
   const rowIndex = guesses.value.length
 
-  // Evaluate tiles (NYT rules)
   const tileColors = evaluateGuess_AnswerAndGuessProvided_ReturnsNYTColors(answer.value, guess)
 
-  // Save tile colors for this row
   if (tileStates.value?.[rowIndex]) {
     tileStates.value[rowIndex] = [...tileColors]
   }
 
   guesses.value.push(guess)
 
-  // Update keyboard with "best color wins"
   keyStates.value = mergeKeyStates_PreviousAndNewFeedbackProvided_ReturnsBestStates(
     keyStates.value,
     guess,
     tileColors
   )
 
-  // win/lose logic 
   if (guess === answer.value) {
     gameOver.value = true
     won.value = true
@@ -254,7 +300,6 @@ const checkGuess = (guess) => {
 
   return tileColors
 }
-
 
 const gameEnded = (wonFlag, guessesCount) => {
   if (statsRecorded.value) return
@@ -307,8 +352,12 @@ const handlePhysicalKeyboard = (event) => {
   }
 }
 
+// SINGLE onMounted - This is the fix!
 onMounted(async () => {
   loadStats()
+
+  // Register the hint handler FIRST
+  registerHintHandler(provideHint)
 
   try {
     const [targets, valids] = await Promise.all([loadTargetWords(), loadValidWords()])
@@ -366,6 +415,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handlePhysicalKeyboard)
+  unregisterHintHandler()
 })
 
 const pushLettersAway = () => {
@@ -410,13 +460,11 @@ const pushLettersAway = () => {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* Give the Vuetify container some consistent vertical breathing room */
 .page {
   padding-top: 24px;
   padding-bottom: 24px;
 }
 
-/* Now this is just the centered game stack (no more margin-left hack) */
 .game-board-container {
   display: flex;
   flex-direction: column;
@@ -426,7 +474,6 @@ const pushLettersAway = () => {
   padding: 20px;
 }
 
-/* Game Board */
 .game-board {
   display: flex;
   flex-direction: column;
@@ -472,7 +519,6 @@ const pushLettersAway = () => {
   color: #ffffff;
 }
 
-/* Message */
 .message {
   text-align: center;
   font-size: 16px;
@@ -492,7 +538,6 @@ const pushLettersAway = () => {
   color: #155724;
 }
 
-/* Responsive Design */
 @media (max-width: 600px) {
   .wordle-tile {
     width: 50px;
@@ -511,48 +556,46 @@ const pushLettersAway = () => {
   }
 }
 
-/* Hand animation */
-  .hand-container {
-    position: fixed;
-    left: 50%;
-    bottom: 40px; /* anchor the base near the bottom */
-    transform: translateX(-50%);
-    pointer-events: none;
-    z-index: 200;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-  }
+.hand-container {
+  position: fixed;
+  left: 50%;
+  bottom: 40px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
 
-  .hand-image {
-    width: 340px; 
-    transform-origin: center bottom; /* anchor at the base */
-    animation: hand-sweep-left 1.2s cubic-bezier(.2,.9,.2,1) forwards;
-  }
+.hand-image {
+  width: 340px; 
+  transform-origin: center bottom;
+  animation: hand-sweep-left 1.2s cubic-bezier(.2,.9,.2,1) forwards;
+}
 
-  @keyframes hand-sweep-left {
-    0% {
-      transform: rotate(40deg) scale(1.05);
-      opacity: 1;
-    }
-    60% {
-      transform: rotate(-20deg) scale(1.03);
-      opacity: 1;
-    }
-    90% {
-      transform: rotate(-20deg) scale(1.02);
-      opacity: 1;
-    }
-    100% {
-      transform: rotate(-20deg) scale(1);
-      opacity: 0;
-    }
+@keyframes hand-sweep-left {
+  0% {
+    transform: rotate(40deg) scale(1.05);
+    opacity: 1;
   }
-
-  /* Push away tiles to the left (match sweep distance) */
-  .wordle-tile.push-away {
-    transform: translateX(-340px) translateY(-24px) rotate(-25deg);
+  60% {
+    transform: rotate(-20deg) scale(1.03);
+    opacity: 1;
+  }
+  90% {
+    transform: rotate(-20deg) scale(1.02);
+    opacity: 1;
+  }
+  100% {
+    transform: rotate(-20deg) scale(1);
     opacity: 0;
-    transition: transform 1.2s cubic-bezier(.2,.9,.2,1), opacity 1.2s cubic-bezier(.2,.9,.2,1);
   }
+}
+
+.wordle-tile.push-away {
+  transform: translateX(-340px) translateY(-24px) rotate(-25deg);
+  opacity: 0;
+  transition: transform 1.2s cubic-bezier(.2,.9,.2,1), opacity 1.2s cubic-bezier(.2,.9,.2,1);
+}
 </style>

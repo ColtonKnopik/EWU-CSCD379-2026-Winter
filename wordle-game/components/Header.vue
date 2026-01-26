@@ -19,6 +19,18 @@
     <div class="sp-right">
       <slot name="right" />
 
+      <!-- Hint button -->
+      <v-btn
+        v-if="showHintButton"
+        icon
+        variant="text"
+        aria-label="Get hint"
+        :disabled="hintDisabled"
+        @click="(e: MouseEvent) => { handleHint(); blurTarget(e) }"
+      >
+        <v-icon icon="mdi-lightbulb-outline" />
+      </v-btn>
+
       <!-- Stats / leaderboard button -->
       <v-btn
         icon
@@ -37,8 +49,6 @@
       >
         <v-icon :icon="isDark ? 'mdi-weather-sunny' : 'mdi-moon-waning-crescent'" />
       </v-btn>
-
-
     </div>
   </v-app-bar>
 
@@ -47,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch, ref } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useTheme } from 'vuetify'
 import Leaderboard from '~/components/Leaderboard.vue'
 
@@ -64,6 +74,7 @@ withDefaults(defineProps<Props>(), {
 })
 
 const statsOpen = useState<boolean>('statsOpen', () => false)
+const { triggerHint, hintDisabled, showHintButton } = useHint()
 
 const theme = useTheme()
 const themeCookie = useCookie<ThemeName>('theme', { default: () => 'light' })
@@ -90,6 +101,9 @@ const blurTarget = (e: Event) => {
   el?.blur()
 }
 
+const handleHint = () => {
+  triggerHint()
+}
 </script>
 
 <style scoped>
