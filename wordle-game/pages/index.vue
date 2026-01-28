@@ -7,6 +7,12 @@
       <!-- Main content column -->
       <v-col cols="12" sm="10" md="8" lg="6" class="d-flex justify-center">
         <div class="game-board-container">
+          <!-- Word of the Day Badge -->
+          <div v-if="currentGameIsWOTD" class="wotd-badge">
+            <span class="wotd-icon">📅</span>
+            <span class="wotd-text">Word of the Day!</span>
+          </div>
+
           <!-- Game Board -->
           <div class="game-board">
             <div
@@ -108,16 +114,17 @@ const provideHint = async () => {
     return
   }
   
-  hintsUsed.value++
-  
   try {
     const hintResult = await generateHint(
       answer.value,
       guesses.value.length,
-      guesses.value
+      guesses.value,
+      hintsUsed.value  
     )
     
     console.log('Hint result:', hintResult)
+    
+    hintsUsed.value++  // Increment AFTER getting the hint
     
     const messageClass = hintResult.severity === 'strong' ? 'success' : 
                         hintResult.severity === 'medium' ? 'info' : 'subtle'
@@ -135,6 +142,8 @@ const provideHint = async () => {
     const unusedLetters = answer.value.split('').filter(letter => 
       !guessedLettersArray.includes(letter)
     )
+    
+    hintsUsed.value++  // Increment even on error
     
     if (unusedLetters.length > 0) {
       const hintLetter = unusedLetters[Math.floor(Math.random() * unusedLetters.length)]
@@ -352,7 +361,7 @@ const handlePhysicalKeyboard = (event) => {
   }
 }
 
-// SINGLE onMounted - This is the fix!
+// SINGLE onMounted
 onMounted(async () => {
   loadStats()
 
@@ -372,28 +381,36 @@ onMounted(async () => {
     console.error('Failed to load word lists:', error)
   }
 
+  // Fetch Word of the Day with better error handling
   try {
+    console.log('Fetching Word of the Day...')
     const res = await fetch('/api/word_of_the_day')
-    if (res.ok) {
-      const data = await res.json()
-      const w = (data?.word || '').toUpperCase()
-      const date = data?.date || new Date().toISOString().split('T')[0]
+    
+    if (!res.ok) {
+      console.error(`WOTD API returned status ${res.status}`)
+      throw new Error(`HTTP ${res.status}`)
+    }
+    
+    const data = await res.json()
+    console.log('WOTD API response:', data)
+    
+    const w = (data?.word || '').toUpperCase()
+    const date = data?.date || new Date().toISOString().split('T')[0]
+    
+    if (/^[A-Z]{5}$/.test(w)) {
+      const lastPlayed = localStorage.getItem('wotd_last_played')
+      console.log(`Last played WOTD: ${lastPlayed}, Today's date: ${date}`)
       
-      if (/^[A-Z]{5}$/.test(w)) {
-        const lastPlayed = localStorage.getItem('wotd_last_played')
-        
-        if (lastPlayed === date) {
-          console.log('✓ Already played today\'s WOTD, starting with random word')
-          initializeGame()
-        } else {
-          console.log('✓ Starting with Word of the Day:', w)
-          wotdDate.value = date
-          initializeGame(w, true)
-        }
-      } else {
+      if (lastPlayed === date) {
+        console.log('✓ Already played today\'s WOTD, starting with random word')
         initializeGame()
+      } else {
+        console.log('✓ Starting with Word of the Day:', w)
+        wotdDate.value = date
+        initializeGame(w, true)
       }
     } else {
+      console.warn('Invalid WOTD format:', w)
       initializeGame()
     }
   } catch (e) {
@@ -474,6 +491,55 @@ const pushLettersAway = () => {
   padding: 20px;
 }
 
+/* Word of the Day Badge */
+.wotd-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  animation: fadeInBounce 0.6s ease-out;
+}
+
+.wotd-icon {
+  font-size: 20px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.wotd-text {
+  letter-spacing: 0.5px;
+}
+
+@keyframes fadeInBounce {
+  0% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+}
+
 .game-board {
   display: flex;
   flex-direction: column;
@@ -538,11 +604,30 @@ const pushLettersAway = () => {
   color: #155724;
 }
 
+.message.info {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.message.subtle {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
 @media (max-width: 600px) {
   .wordle-tile {
     width: 50px;
     height: 50px;
     font-size: 28px;
+  }
+
+  .wotd-badge {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
+
+  .wotd-icon {
+    font-size: 18px;
   }
 
   .key-button {

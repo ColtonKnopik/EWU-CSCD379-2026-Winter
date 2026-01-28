@@ -36,11 +36,16 @@ interface HintResult {
 
 /**
  * Main hint generator with progressive difficulty
+ * @param word - The target word to generate hints for
+ * @param guessCount - Number of guesses made (for context)
+ * @param previousGuesses - Array of previous guess attempts
+ * @param hintCount - Number of hints already shown (controls progression)
  */
 export async function generateHint(
     word: string,
     guessCount: number = 0,
-    previousGuesses: string[] = []
+    previousGuesses: string[] = [],
+    hintCount: number = 0  // FIXED: Track hint progression separately
 ): Promise<HintResult> {
     // Validate input
     if (!word || word.trim().length === 0) {
@@ -56,6 +61,7 @@ export async function generateHint(
     console.log('=== HINT GENERATION START ===');
     console.log('Word:', cleanWord);
     console.log('Guess count:', guessCount);
+    console.log('Hint count:', hintCount);  // FIXED: Log hint count
     console.log('Previous guesses:', previousGuesses);
 
     try {
@@ -83,21 +89,21 @@ export async function generateHint(
             const errorText = await response.text();
             console.warn(`Dictionary API failed with status ${response.status}`);
             console.warn('Error response:', errorText);
-            return getFallbackHint(cleanWord, guessCount, previousGuesses);
+            return getFallbackHint(cleanWord, hintCount, previousGuesses);  // FIXED: Use hintCount
         }
 
         const data: DictionaryEntry[] = await response.json();
         console.log('Dictionary data received:', JSON.stringify(data, null, 2));
 
         if (data && Array.isArray(data) && data.length > 0 && data[0]) {
-            const hint = generateProgressiveHint(data[0], cleanWord, guessCount, previousGuesses);
+            const hint = generateProgressiveHint(data[0], cleanWord, hintCount, previousGuesses);  // FIXED: Use hintCount
             console.log('Generated hint:', hint);
             console.log('=== HINT GENERATION SUCCESS ===');
             return hint;
         }
 
         console.warn('Invalid data structure from dictionary API');
-        return getFallbackHint(cleanWord, guessCount, previousGuesses);
+        return getFallbackHint(cleanWord, hintCount, previousGuesses);  // FIXED: Use hintCount
     } catch (error) {
         console.error('=== HINT GENERATION ERROR ===');
         console.error('Error:', error);
@@ -106,21 +112,21 @@ export async function generateHint(
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
         }
-        return getFallbackHint(cleanWord, guessCount, previousGuesses);
+        return getFallbackHint(cleanWord, hintCount, previousGuesses);  // FIXED: Use hintCount
     }
 }
 
 /**
- * Generates progressive hints based on guess count
+ * Generates progressive hints based on hint count (not guess count)
  */
 function generateProgressiveHint(
     entry: DictionaryEntry,
     word: string,
-    guessCount: number,
+    hintCount: number,  // FIXED: Use hintCount instead of guessCount
     previousGuesses: string[]
 ): HintResult {
-    // Guess 0-1: Very subtle hints (part of speech, category)
-    if (guessCount <= 1) {
+    // Hint 0: Very subtle hints (part of speech, category)
+    if (hintCount === 0) {
         if (entry.meanings && entry.meanings.length > 0 && entry.meanings[0]) {
             const partOfSpeech = entry.meanings[0].partOfSpeech;
             const category = getCategoryFromMeaning(entry.meanings[0]);
@@ -135,8 +141,8 @@ function generateProgressiveHint(
         }
     }
 
-    // Guess 2-3: Medium hints (vague definition or synonyms)
-    if (guessCount <= 3) {
+    // Hint 1-2: Medium hints (vague definition or synonyms)
+    if (hintCount >= 1 && hintCount <= 2) {
         if (entry.meanings && entry.meanings.length > 0 && entry.meanings[0]) {
             const meaning = entry.meanings[0];
 
@@ -163,8 +169,8 @@ function generateProgressiveHint(
         }
     }
 
-    // Guess 4: Letter position hint
-    if (guessCount === 4) {
+    // Hint 3: Letter position hint
+    if (hintCount === 3) {
         const letterHint = getSmartLetterHint(word, previousGuesses);
         return {
             text: letterHint,
@@ -173,7 +179,7 @@ function generateProgressiveHint(
         };
     }
 
-    // Guess 5+: Strong hints (definition or structure)
+    // Hint 4+: Strong hints (definition or structure)
     if (entry.meanings && entry.meanings.length > 0 && entry.meanings[0]) {
         const meaning = entry.meanings[0];
         if (meaning.definitions && meaning.definitions.length > 0 && meaning.definitions[0]) {
@@ -188,7 +194,7 @@ function generateProgressiveHint(
     }
 
     // Ultimate fallback
-    return getStructureHint(word, guessCount, previousGuesses);
+    return getStructureHint(word, hintCount, previousGuesses);
 }
 
 /**
@@ -343,7 +349,7 @@ function getSmartLetterHint(word: string, previousGuesses: string[]): string {
 /**
  * Structure-based hint (fallback)
  */
-function getStructureHint(word: string, guessCount: number, previousGuesses: string[]): HintResult {
+function getStructureHint(word: string, hintCount: number, previousGuesses: string[]): HintResult {
     const uniqueLetters = new Set(word.split('')).size;
     const vowels = word.split('').filter(c => c && 'AEIOU'.includes(c)).length;
     const consonants = word.length - vowels;
@@ -358,21 +364,21 @@ function getStructureHint(word: string, guessCount: number, previousGuesses: str
         getSmartLetterHint(word, previousGuesses)
     ];
 
-    const index = Math.min(guessCount, hints.length - 1);
+    const index = Math.min(hintCount, hints.length - 1);
     const hintText = hints[index];
 
     return {
         text: hintText || 'No hint available',
         type: 'structure',
-        severity: guessCount > 3 ? 'strong' : 'medium'
+        severity: hintCount > 2 ? 'strong' : 'medium'
     };
 }
 
 /**
  * Fallback hints when API fails
  */
-function getFallbackHint(word: string, guessCount: number, previousGuesses: string[]): HintResult {
-    return getStructureHint(word, guessCount, previousGuesses);
+function getFallbackHint(word: string, hintCount: number, previousGuesses: string[]): HintResult {
+    return getStructureHint(word, hintCount, previousGuesses);
 }
 
 /**
