@@ -1,82 +1,45 @@
 <template>
   <div class="game-container">
-    <div class="game-ui">
-      <div class="turn-info">
-        <h2>Turn {{ gameState.turn }}</h2>
-        <p class="current-player" :class="gameState.currentPlayer">
-          {{ gameState.currentPlayer === 'player1' ? 'Player 1' : 'Player 2' }}'s Turn
-        </p>
-        <button @click="endTurn" class="end-turn-btn">End Turn</button>
-      </div>
+    <GameHeader
+      :turn="gameState.turn"
+      :current-player="gameState.currentPlayer"
+      :player1-gold="goldState.player1.gold"
+      :player1-income="goldState.player1.income"
+      :player2-gold="goldState.player2.gold"
+      :player2-income="goldState.player2.income"
+      @end-turn="endTurn"
+    />
 
-      <div class="gold-section">
-        <GoldDisplay 
-          player="player1" 
-          :gold="goldState.player1.gold" 
-          :income="goldState.player1.income"
+    <div class="game-content">
+      <div class="game-sidebar">
+        <UnitInfo
+          :unit="gameState.selectedUnit"
+          :current-player="gameState.currentPlayer"
+          @deselect="deselectUnit"
         />
-        <GoldDisplay 
-          player="player2" 
-          :gold="goldState.player2.gold" 
-          :income="goldState.player2.income"
+
+        <ActionMode
+          :mode="actionMode"
+          :has-moves="validMoves.length > 0"
+          :has-attacks="validAttacks.length > 0"
         />
       </div>
 
-      <div v-if="gameState.selectedUnit" class="unit-info">
-        <h3>{{ gameState.selectedUnit.name }}</h3>
-        <p>Health: {{ gameState.selectedUnit.health }}/{{ gameState.selectedUnit.maxHealth }}</p>
-        <p>Actions: {{ gameState.selectedUnit.actionsRemaining }}/{{ gameState.selectedUnit.maxActions }}</p>
-        <p>Attack: {{ gameState.selectedUnit.attackPower }}</p>
-        <p>Move Range: {{ gameState.selectedUnit.moveRange }}</p>
-        <p>Attack Range: {{ gameState.selectedUnit.attackRange }}</p>
-        <button @click="deselectUnit" class="deselect-btn">Deselect</button>
-      </div>
-
-      <div class="action-mode">
-        <p v-if="actionMode === 'move' && validAttacks.length === 0" class="mode-text move">Click a cell to MOVE</p>
-        <p v-if="actionMode === 'attack' && validMoves.length === 0" class="mode-text attack">Click an enemy to ATTACK</p>
-        <div v-if="validMoves.length > 0 && validAttacks.length > 0" class="mode-both">
-          <p class="mode-text move">Click a cell to MOVE</p>
-          <p class="mode-text attack">Click an enemy to ATTACK</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="board-wrapper">
-      <div class="board">
-        <div
-          v-for="row in BOARD_SIZE"
-          :key="row"
-          class="hex-row"
-          :class="{ offset: row % 2 === 0 }"
-        >
-          <div
-            v-for="col in COLS_PER_ROW"
-            :key="`${row}-${col}`"
-            class="cell-wrapper"
-          >
-            <Cell
-              :row="row - 1"
-              :col="col - 1"
-              :terrain-type="getCellTerrain(row - 1, col - 1)"
-              :flag-owner="getFlagAt(row - 1, col - 1)?.owner || null"
-              :flag-contested="getFlagAt(row - 1, col - 1)?.contestedBy !== null"
-              @click="onCellClick(row - 1, col - 1)"
-              :class="getCellHighlight(row - 1, col - 1)"
-            />
-            <Unit
-              v-if="getUnitAt(row - 1, col - 1)"
-              :unit-type="getUnitAt(row - 1, col - 1)!.unitType"
-              :player="getUnitAt(row - 1, col - 1)!.player"
-              :health="getUnitAt(row - 1, col - 1)!.health"
-              :max-health="getUnitAt(row - 1, col - 1)!.maxHealth"
-              :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
-              :is-selected="gameState.selectedUnit?.id === getUnitAt(row - 1, col - 1)!.id"
-              @click="onCellClick(row - 1, col - 1)"
-            />
-          </div>
-        </div>
-      </div>
+      <GameBoard
+        ref="gameBoardRef"
+        :board-size="BOARD_SIZE"
+        :cols-per-row="COLS_PER_ROW"
+        :units="gameState.units"
+        :selected-unit-id="gameState.selectedUnit?.id || null"
+        :valid-moves="validMoves"
+        :valid-attacks="validAttacks"
+        :placement-zone="gamePhase === 'placement' ? { player: placementPlayer, cols: placementPlayer === 'player1' ? [0, 1, 2] : [5, 6, 7] } : null"
+        :current-player="gameState.currentPlayer"
+        :get-cell-terrain="getCellTerrain"
+        :get-flag-owner="getFlagOwner"
+        :is-flag-contested="isFlagContested"
+        @cell-click="onCellClick"
+      />
     </div>
 
     <UnitShop
@@ -88,10 +51,9 @@
       @purchase="handlePurchase"
     />
 
-    <KingPlacement
-      v-if="showKingPlacement"
+    <CaptainPlacementIndicator
+      v-if="gamePhase === 'placement'"
       :player="placementPlayer"
-      @close="closeKingPlacement"
     />
 
     <VictoryScreen
@@ -107,19 +69,20 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed } from 'vue'
-import Cell, { type TerrainType } from '~~/components/Cell.vue'
-import Unit from '~~/components/Unit.vue'
-import GoldDisplay from '~~/components/GoldDisplay.vue'
+import GameHeader from '~~/components/GameHeader.vue'
+import UnitInfo from '~~/components/UnitInfo.vue'
+import ActionMode from '~~/components/ActionMode.vue'
+import GameBoard from '~~/components/GameBoard.vue'
 import UnitShop from '~~/components/UnitShop.vue'
-import KingPlacement from '~~/components/KingPlacement.vue'
+import CaptainPlacementIndicator from '~~/components/CaptainPlacementIndicator.vue'
 import VictoryScreen from '~~/components/VictoryScreen.vue'
+import type { TerrainType } from '~~/components/Cell.vue'
 import baseMapData from '~~/data/baseMap.json'
 import { 
   type GameState, 
   type Unit as UnitType, 
   type Player,
   type CellPosition,
-  getHexDistance,
   getCellsInRange
 } from '~~/types/gameTypes.ts'
 import { 
@@ -136,7 +99,7 @@ const COLS_PER_ROW = 8
 type GamePhase = 'placement' | 'playing' | 'victory'
 const gamePhase = ref<GamePhase>('placement')
 const placementPlayer = ref<Player>('player1')
-const showKingPlacement = ref(true)
+const showKingPlacement = ref(false) // Changed to false, no modal
 const winner = ref<Player | null>(null)
 
 // Terrain map
@@ -189,9 +152,23 @@ function getFlagAt(row: number, col: number) {
   return flagState.get(key)
 }
 
+// Helper functions for GameBoard component
+function getFlagOwner(row: number, col: number): Player | null {
+  const flag = getFlagAt(row, col)
+  return flag?.owner || null
+}
+
+function isFlagContested(row: number, col: number): boolean {
+  const flag = getFlagAt(row, col)
+  return flag?.contestedBy !== null
+}
+
 const actionMode = ref<'none' | 'move' | 'attack'>('none')
 const validMoves = ref<CellPosition[]>([])
 const validAttacks = ref<CellPosition[]>([])
+
+// GameBoard ref for triggering sounds
+const gameBoardRef = ref<any>(null)
 
 // Shop state
 const showShop = ref(false)
@@ -207,44 +184,43 @@ function getUnitAt(row: number, col: number): UnitType | undefined {
   return gameState.units.find(u => u.row === row && u.col === col)
 }
 
-function closeKingPlacement() {
-  showKingPlacement.value = false
-}
-
 function onCellClick(row: number, col: number) {
-  // Handle King placement phase
+  // Handle Captain placement phase
   if (gamePhase.value === 'placement') {
     const clickedUnit = getUnitAt(row, col)
     if (clickedUnit) return // Can't place on existing unit
     
-    // Allow placing anywhere (removed terrain and area restrictions)
+    // Check placement zones based on player
+    const isValidPlacement = 
+      (placementPlayer.value === 'player1' && col <= 2) || // Player 1: left 3 columns (0-2)
+      (placementPlayer.value === 'player2' && col >= 5)    // Player 2: right 3 columns (5-7)
     
-    // Place the King
-    const king: UnitType = {
-      id: `${placementPlayer.value}-king`,
-      name: `${placementPlayer.value === 'player1' ? 'Player 1' : 'Player 2'} King`,
-      unitType: 'king',
+    if (!isValidPlacement) return // Invalid placement zone
+    
+    // Place the Captain
+    const captain: UnitType = {
+      id: `${placementPlayer.value}-captain`,
+      name: `${placementPlayer.value === 'player1' ? 'Player 1' : 'Player 2'} Captain`,
+      unitType: 'captain', 
       player: placementPlayer.value,
       row,
       col,
       health: 150,
       maxHealth: 150,
       attackPower: 30,
-      moveRange: 0,  // King cannot move
+      moveRange: 0,  
       attackRange: 1,
       actionsRemaining: 1,
       maxActions: 1
     }
     
-    gameState.units.push(king)
+    gameState.units.push(captain)
     
     // Move to next player or start game
     if (placementPlayer.value === 'player1') {
       placementPlayer.value = 'player2'
-      showKingPlacement.value = true
     } else {
       gamePhase.value = 'playing'
-      showKingPlacement.value = false
       // Add starting units for both players
       addStartingUnits()
     }
@@ -271,16 +247,9 @@ function onCellClick(row: number, col: number) {
   
   // If we clicked a unit
   if (clickedUnit) {
-    // If it's our unit, select it (but not if it's a King - they can't move)
+    // If it's our unit, select it
     if (clickedUnit.player === gameState.currentPlayer && 
-        clickedUnit.actionsRemaining > 0 && 
-        clickedUnit.unitType !== 'king') {
-      selectUnit(clickedUnit)
-      return
-    }
-    // Allow selecting King for attack display
-    if (clickedUnit.player === gameState.currentPlayer && 
-        clickedUnit.unitType === 'king') {
+        clickedUnit.actionsRemaining > 0) {
       selectUnit(clickedUnit)
       return
     }
@@ -289,7 +258,15 @@ function onCellClick(row: number, col: number) {
       // Check if this enemy is in attack range
       if (validAttacks.value.some(pos => pos.row === row && pos.col === col)) {
         attackUnit(gameState.selectedUnit, clickedUnit)
+        return
       }
+    }
+    // If it's an enemy and we don't have a unit selected, show enemy info
+    else if (clickedUnit.player !== gameState.currentPlayer) {
+      gameState.selectedUnit = clickedUnit
+      validMoves.value = []
+      validAttacks.value = []
+      actionMode.value = 'none'
       return
     }
     return
@@ -299,32 +276,34 @@ function onCellClick(row: number, col: number) {
   if (gameState.selectedUnit) {
     if (validMoves.value.some(pos => pos.row === row && pos.col === col)) {
       moveUnit(gameState.selectedUnit, row, col)
+      return
     }
   }
+  
+  // Deselect if clicking empty cell
+  deselectUnit()
 }
 
 function selectUnit(unit: UnitType) {
-  gameState.selectedUnit = unit
-  validMoves.value = []
-  validAttacks.value = []
+gameState.selectedUnit = unit
+validMoves.value = []
+validAttacks.value = []
   
-  // Calculate valid moves and attacks
-  if (unit.actionsRemaining > 0) {
-    // Kings can't move but can attack
-    if (unit.unitType !== 'king') {
-      const moveableCells = getCellsInRange(
-        { row: unit.row, col: unit.col },
-        unit.moveRange,
-        BOARD_SIZE,
-        COLS_PER_ROW
-      ).filter(pos => {
-        const terrain = getCellTerrain(pos.row, pos.col)
-        const hasUnit = getUnitAt(pos.row, pos.col)
-        return !hasUnit && isTerrainWalkable(terrain)
-      })
-      
-      validMoves.value = moveableCells
-    }
+// Calculate valid moves and attacks
+if (unit.actionsRemaining > 0) {
+    // All units can move (including Captains)
+    const moveableCells = getCellsInRange(
+      { row: unit.row, col: unit.col },
+      unit.moveRange,
+      BOARD_SIZE,
+      COLS_PER_ROW
+    ).filter(pos => {
+      const terrain = getCellTerrain(pos.row, pos.col)
+      const hasUnit = getUnitAt(pos.row, pos.col)
+      return !hasUnit && isTerrainWalkable(terrain)
+    })
+    
+    validMoves.value = moveableCells
     
     const attackableCells = getCellsInRange(
       { row: unit.row, col: unit.col },
@@ -422,14 +401,14 @@ function addStartingUnits() {
 }
 
 function checkWinCondition() {
-  // Check if either King is dead
-  const player1King = gameState.units.find(u => u.player === 'player1' && u.unitType === 'king')
-  const player2King = gameState.units.find(u => u.player === 'player2' && u.unitType === 'king')
+  // Check if either Captain is dead
+  const player1Captain = gameState.units.find(u => u.player === 'player1' && u.unitType === 'captain')
+  const player2Captain = gameState.units.find(u => u.player === 'player2' && u.unitType === 'captain')
   
-  if (!player1King) {
+  if (!player1Captain) {
     winner.value = 'player2'
     gamePhase.value = 'victory'
-  } else if (!player2King) {
+  } else if (!player2Captain) {
     winner.value = 'player1'
     gamePhase.value = 'victory'
   }
@@ -456,18 +435,35 @@ function moveUnit(unit: UnitType, row: number, col: number) {
 }
 
 function attackUnit(attacker: UnitType, defender: UnitType) {
+  // Play attack sound for attacker
+  if (gameBoardRef.value) {
+    gameBoardRef.value.playUnitAttackSound(attacker.id)
+  }
+  
   defender.health -= attacker.attackPower
   attacker.actionsRemaining--
   
+  // Play hurt sound for defender if still alive
+  if (defender.health > 0 && gameBoardRef.value) {
+    gameBoardRef.value.playUnitHurtSound(defender.id)
+  }
+  
   if (defender.health <= 0) {
-    // Remove dead unit
-    const index = gameState.units.findIndex(u => u.id === defender.id)
-    if (index !== -1) {
-      gameState.units.splice(index, 1)
+    // Play death sound
+    if (gameBoardRef.value) {
+      gameBoardRef.value.playUnitDeathSound(defender.id)
     }
     
-    // Check win condition
-    checkWinCondition()
+    // Remove dead unit after a short delay to let death sound play
+    setTimeout(() => {
+      const index = gameState.units.findIndex(u => u.id === defender.id)
+      if (index !== -1) {
+        gameState.units.splice(index, 1)
+      }
+      
+      // Check win condition
+      checkWinCondition()
+    }, 100)
   }
   
   if (attacker.actionsRemaining > 0) {
@@ -581,16 +577,6 @@ function endTurn() {
   deselectUnit()
 }
 
-function getCellHighlight(row: number, col: number): string {
-  if (validMoves.value.some(pos => pos.row === row && pos.col === col)) {
-    return 'highlight-move'
-  }
-  if (validAttacks.value.some(pos => pos.row === row && pos.col === col)) {
-    return 'highlight-attack'
-  }
-  return ''
-}
-
 function handlePurchase(unitType: UnitType, cost: number) {
   if (!shopSpawnPoint.value) return
   
@@ -640,7 +626,7 @@ function restartGame() {
   // Reset all state
   gamePhase.value = 'placement'
   placementPlayer.value = 'player1'
-  showKingPlacement.value = true
+  showKingPlacement.value = false
   winner.value = null
   gameState.units = []
   gameState.selectedUnit = null
@@ -673,160 +659,22 @@ const victoryStats = computed(() => {
 <style scoped>
 .game-container {
   display: flex;
-  gap: 20px;
-  padding: 20px;
+  flex-direction: column;
   background: #0a0a0a;
   min-height: 100vh;
 }
 
-.game-ui {
+.game-content {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  flex: 1;
+}
+
+.game-sidebar {
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 250px;
-}
-
-.turn-info,
-.unit-info {
-  background: #1a1a1a;
-  padding: 20px;
-  border-radius: 8px;
-  color: #fff;
-}
-
-.gold-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.turn-info h2 {
-  margin: 0 0 10px 0;
-}
-
-.current-player {
-  font-size: 18px;
-  font-weight: bold;
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.current-player.player1 {
-  background: #3498db;
-}
-
-.current-player.player2 {
-  background: #e74c3c;
-}
-
-.end-turn-btn,
-.deselect-btn {
-  width: 100%;
-  padding: 12px;
-  background: #555;
-  border: none;
-  border-radius: 6px;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 10px;
-}
-
-.end-turn-btn:hover,
-.deselect-btn:hover {
-  background: #666;
-}
-
-.unit-info h3 {
-  margin: 0 0 10px 0;
-}
-
-.unit-info p {
-  margin: 5px 0;
-}
-
-.action-mode {
-  background: #1a1a1a;
-  padding: 15px;
-  border-radius: 8px;
-}
-
-.mode-both {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.mode-text {
-  margin: 0;
-  font-size: 16px;
-  font-weight: bold;
-  text-align: center;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.mode-text.move {
-  background: #27ae60;
-  color: white;
-}
-
-.mode-text.attack {
-  background: #e74c3c;
-  color: white;
-}
-
-.board-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  flex: 1;
-}
-
-.board {
-  display: flex;
-  flex-direction: column;
-}
-
-.hex-row {
-  display: flex;
-  height: 100px;
-  margin-top: -25px;
-}
-
-.hex-row:first-child {
-  margin-top: 0;
-}
-
-.hex-row.offset {
-  margin-left: 43.3px;
-}
-
-.cell-wrapper {
-  width: 86.6px;
-  height: 100px;
-  flex-shrink: 0;
-  margin-left: -1px;
-  position: relative;
-}
-
-.cell-wrapper:first-child {
-  margin-left: 0;
-}
-
-:deep(.highlight-move .hexagon-shape) {
-  stroke: #27ae60;
-  stroke-width: 4;
-  filter: brightness(1.2);
-}
-
-:deep(.highlight-attack .hexagon-shape) {
-  stroke: #e74c3c;
-  stroke-width: 4;
-  filter: brightness(1.2);
 }
 </style>

@@ -27,7 +27,7 @@
       </div>
 
       <div class="victory-message">
-        <p>The enemy King has fallen!</p>
+        <p>The enemy Captain has fallen!</p>
       </div>
 
       <button @click="$emit('restart')" class="restart-btn">

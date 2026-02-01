@@ -55,7 +55,7 @@ defineEmits<{
   click: []
 }>()
 
-// Hexagon points for SVG (pointy-top orientation like Phobies)
+// Hexagon points for SVG
 // Points go around the hexagon clockwise starting from top point
 const hexagonPoints = "50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25"
 </script>

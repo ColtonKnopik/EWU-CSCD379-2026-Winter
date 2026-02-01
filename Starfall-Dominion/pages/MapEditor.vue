@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
-import Cell, { type TerrainType } from './Cell.vue'
+import Cell, { type TerrainType } from '~~/components/Cell.vue'
 
 const BOARD_SIZE = 8
 const COLS_PER_ROW = 8
