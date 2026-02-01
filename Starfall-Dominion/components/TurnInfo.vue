@@ -4,11 +4,12 @@
     <p class="current-player" :class="currentPlayer">
       {{ currentPlayer === 'player1' ? 'Player 1' : 'Player 2' }}'s Turn
     </p>
-    <button @click="$emit('endTurn')" class="end-turn-btn">End Turn</button>
+    <button @click="handleEndTurn" class="end-turn-btn">End Turn</button>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
 import type { Player } from '~~/types/gameTypes'
 
 defineProps<{
@@ -16,9 +17,48 @@ defineProps<{
   currentPlayer: Player
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   endTurn: []
 }>()
+
+// End turn sound
+const endTurnAudio = ref<HTMLAudioElement | null>(null)
+
+onMounted(() => {
+  // Preload the end turn sound
+  try {
+    endTurnAudio.value = new Audio('/audio/ui/end-turn.m4a')
+    endTurnAudio.value.volume = 0.5
+    endTurnAudio.value.preload = 'auto'
+    
+    // Handle missing audio file gracefully
+    endTurnAudio.value.addEventListener('error', () => {
+      console.warn('End turn sound not found: /audio/ui/end-turn.m4a')
+    })
+  } catch (error) {
+    console.warn('Failed to load end turn sound:', error)
+  }
+})
+
+onUnmounted(() => {
+  if (endTurnAudio.value) {
+    endTurnAudio.value.pause()
+    endTurnAudio.value.src = ''
+  }
+})
+
+function handleEndTurn() {
+  // Play sound effect
+  if (endTurnAudio.value) {
+    endTurnAudio.value.currentTime = 0
+    endTurnAudio.value.play().catch(error => {
+      console.warn('Could not play end turn sound:', error)
+    })
+  }
+  
+  // Emit the event
+  emit('endTurn')
+}
 </script>
 
 <style scoped>
