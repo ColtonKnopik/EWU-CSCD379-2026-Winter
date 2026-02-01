@@ -100,6 +100,7 @@ const showActions = computed(() => {
 
 .unit.player2 :deep(.unit-icon) {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 10px rgba(239, 68, 68, 0.3));
+  transform: scaleX(-1); /* Flip horizontally for player 2 */
 }
 
 .unit.selected.player1 :deep(.unit-icon) {
@@ -108,6 +109,7 @@ const showActions = computed(() => {
 
 .unit.selected.player2 :deep(.unit-icon) {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 15px rgba(239, 68, 68, 0.8));
+  transform: scaleX(-1); /* Keep flipped when selected */
 }
 
 .unit.selected :deep(.unit-icon),
@@ -204,6 +206,10 @@ const showActions = computed(() => {
 .unit:hover :deep(.unit-icon),
 .unit:hover :deep(.captain-icon) {
   transform: scale(1.05);
+}
+
+.unit.player2:hover :deep(.unit-icon) {
+  transform: scaleX(-1) scale(1.05);
 }
 
 .unit.captain:hover :deep(.captain-icon) {

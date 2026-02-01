@@ -93,13 +93,13 @@ const endTurnAudio = ref<HTMLAudioElement | null>(null)
 onMounted(() => {
   // Preload the end turn sound
   try {
-    endTurnAudio.value = new Audio('/audio/ui/end-turn.mp3')
+    endTurnAudio.value = new Audio('/audio/ui/end-turn.m4a')
     endTurnAudio.value.volume = 0.5
     endTurnAudio.value.preload = 'auto'
     
     // Handle missing audio file gracefully
     endTurnAudio.value.addEventListener('error', () => {
-      console.warn('End turn sound not found: /audio/ui/end-turn.mp3')
+      console.warn('End turn sound not found: /audio/ui/end-turn.m4a')
     })
   } catch (error) {
     console.warn('Failed to load end turn sound:', error)

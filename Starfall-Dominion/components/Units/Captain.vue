@@ -10,7 +10,7 @@
     @click="$emit('click')"
   >
     <template #icon>
-      <div class="captain-icon">👑</div>
+      <img :src="captainIcon" alt="Captain" class="unit-icon" />
     </template>
   </Unit>
 </template>
@@ -27,6 +27,8 @@ interface Props {
   isSelected?: boolean
   currentPlayer?: Player
 }
+
+const captainIcon = new URL('../../data/sprites/Captain.png', import.meta.url).href
 
 withDefaults(defineProps<Props>(), {
   isSelected: false,

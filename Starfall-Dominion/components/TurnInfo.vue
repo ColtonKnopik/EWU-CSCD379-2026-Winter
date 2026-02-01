@@ -29,7 +29,8 @@ onMounted(() => {
   try {
     endTurnAudio.value = new Audio('/audio/ui/end-turn.m4a')
     endTurnAudio.value.volume = 0.5
-    endTurnAudio.value.preload = 'auto'
+      endTurnAudio.value.preload = 'auto'
+
     
     // Handle missing audio file gracefully
     endTurnAudio.value.addEventListener('error', () => {
