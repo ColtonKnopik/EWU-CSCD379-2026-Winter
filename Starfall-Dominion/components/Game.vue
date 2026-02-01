@@ -90,7 +90,7 @@ import {
   canSpawnOnTerrain, 
   getTerrainDamage,
   getTerrainDamageTarget 
-} from '~~/utils/terrainConfig.ts'
+} from '~~/utils/Terrainconfig.ts'
 
 const BOARD_SIZE = 8
 const COLS_PER_ROW = 8
