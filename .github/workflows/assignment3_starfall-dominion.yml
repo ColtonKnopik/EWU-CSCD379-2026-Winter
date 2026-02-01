@@ -38,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: ./Starfall-Dominion/.output/public
 
   deploy:
     runs-on: ubuntu-latest
@@ -59,9 +59,10 @@ jobs:
         with:
           app-name: 'Starfall-Dominion'
           publish-profile: ${{ secrets.STARFALL_PUBLISH_PROFILE }}
-          package: ./Starfall-Dominion/.output/public
+          package: .
 
           
+
 
 
 
