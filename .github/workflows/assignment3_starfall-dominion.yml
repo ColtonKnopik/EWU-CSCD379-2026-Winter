@@ -23,17 +23,22 @@ jobs:
         with:
           node-version: '20.x'
 
-      - name: npm install, build, and test
+      - name: install dependencies
         working-directory: ./Starfall-Dominion
-        run: |
-          npm install
-          npm run build --if-present
+        run: npm ci
 
+      - name: Build Vue app
+        working-directory: ./Starfall-Dominion
+        run: npm run generate
+
+      - name: Copy startup script
+        run: cp ./Starfall-Dominion/startup.sh ./Starfall-Dominion/.output/public/
+        
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
-          path: .
+          path: ./Starfall-Dominion/.output/public
 
   deploy:
     runs-on: ubuntu-latest
@@ -54,8 +59,10 @@ jobs:
         with:
           app-name: 'Starfall-Dominion'
           publish-profile: ${{ secrets.STARFALL_PUBLISH_PROFILE }}
-          package: ./Starfall-Dominion/.output/public
+          package: .
 
           
+
+
 
 
