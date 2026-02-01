@@ -24,7 +24,7 @@ jobs:
           node-version: '20.x'
 
       - name: npm install, build, and test
-        working-directory: ./starfall-dominion
+        working-directory: ./Starfall-Dominion
         run: |
           npm install
           npm run build --if-present
@@ -55,6 +55,7 @@ jobs:
         with:
           app-name: 'Starfall-Dominion'
           publish-profile: ${{ secrets.STARFALL_PUBLISH_PROFILE }}
-          package: ./starfall-dominion/.output/public
+          package: ./Starfall-Dominion/.output/public
 
           
+
