@@ -452,10 +452,40 @@ onUnmounted(() => {
   gap: 4rem;
 }
 
+/* Height-based scaling for laptops */
+@media (max-height: 900px) {
+  .menu-wrapper {
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    justify-content: flex-start;
+    padding-top: 2rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .menu-wrapper {
+    gap: 1.5rem;
+    padding: 1.5rem 2rem 1rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .menu-wrapper {
+    gap: 1rem;
+    padding: 1rem 1.5rem 0.75rem;
+  }
+}
+
 /* Title Section */
 .title-container {
   text-align: center;
   position: relative;
+}
+
+@media (max-height: 800px) {
+  .title-container {
+    margin-bottom: -0.5rem;
+  }
 }
 
 .game-title {
@@ -471,6 +501,27 @@ onUnmounted(() => {
   background-clip: text;
   filter: drop-shadow(0 0 30px rgba(96, 165, 250, 0.5));
   animation: title-glow 3s ease-in-out infinite;
+}
+
+@media (max-height: 900px) {
+  .game-title {
+    font-size: clamp(2.5rem, 9vw, 6rem);
+    letter-spacing: 0.3rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .game-title {
+    font-size: clamp(2rem, 8vw, 5rem);
+    letter-spacing: 0.25rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .game-title {
+    font-size: clamp(1.75rem, 7vw, 4rem);
+    letter-spacing: 0.2rem;
+  }
 }
 
 @keyframes title-glow {
@@ -492,6 +543,30 @@ onUnmounted(() => {
   display: flex;
   justify-content: center;
   gap: 0.3rem;
+}
+
+@media (max-height: 900px) {
+  .game-subtitle {
+    font-size: clamp(1rem, 3vw, 1.75rem);
+    letter-spacing: 0.5rem;
+    margin: 0.75rem 0 0 0;
+  }
+}
+
+@media (max-height: 800px) {
+  .game-subtitle {
+    font-size: clamp(0.875rem, 2.5vw, 1.5rem);
+    letter-spacing: 0.4rem;
+    margin: 0.5rem 0 0 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .game-subtitle {
+    font-size: clamp(0.75rem, 2vw, 1.25rem);
+    letter-spacing: 0.3rem;
+    margin: 0.5rem 0 0 0;
+  }
 }
 
 .subtitle-char {
@@ -518,6 +593,27 @@ onUnmounted(() => {
   margin-top: 2rem;
   opacity: 0;
   animation: decoration-fade-in 1s ease-out 1s both;
+}
+
+@media (max-height: 900px) {
+  .title-decoration {
+    margin-top: 1rem;
+    gap: 1rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .title-decoration {
+    margin-top: 0.75rem;
+    gap: 0.75rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .title-decoration {
+    margin-top: 0.5rem;
+    gap: 0.5rem;
+  }
 }
 
 @keyframes decoration-fade-in {
@@ -572,6 +668,26 @@ onUnmounted(() => {
   justify-content: center;
 }
 
+@media (max-height: 900px) {
+  .menu-grid {
+    gap: 1.25rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .menu-grid {
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
+  }
+}
+
+@media (max-height: 700px) {
+  .menu-grid {
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
+  }
+}
+
 .game-mode-card {
   position: relative;
   padding: 3rem 2rem;
@@ -590,6 +706,40 @@ onUnmounted(() => {
     20px 100%,
     0 calc(100% - 20px)
   );
+}
+
+@media (max-height: 900px) {
+  .game-mode-card {
+    padding: 2rem 1.5rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .game-mode-card {
+    padding: 1.5rem 1.25rem;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 15px) 0,
+      100% 15px,
+      100% 100%,
+      15px 100%,
+      0 calc(100% - 15px)
+    );
+  }
+}
+
+@media (max-height: 700px) {
+  .game-mode-card {
+    padding: 1.25rem 1rem;
+    clip-path: polygon(
+      0 0,
+      calc(100% - 12px) 0,
+      100% 12px,
+      100% 100%,
+      12px 100%,
+      0 calc(100% - 12px)
+    );
+  }
 }
 
 .game-mode-card:hover {
@@ -671,6 +821,24 @@ onUnmounted(() => {
   gap: 1.5rem;
 }
 
+@media (max-height: 900px) {
+  .card-content {
+    gap: 1rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .card-content {
+    gap: 0.75rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .card-content {
+    gap: 0.5rem;
+  }
+}
+
 .icon-container {
   width: 100px;
   height: 100px;
@@ -678,6 +846,27 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   position: relative;
+}
+
+@media (max-height: 900px) {
+  .icon-container {
+    width: 75px;
+    height: 75px;
+  }
+}
+
+@media (max-height: 800px) {
+  .icon-container {
+    width: 65px;
+    height: 65px;
+  }
+}
+
+@media (max-height: 700px) {
+  .icon-container {
+    width: 55px;
+    height: 55px;
+  }
 }
 
 .mode-icon {
@@ -744,12 +933,57 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
+@media (max-height: 900px) {
+  .mode-title {
+    font-size: 1.25rem;
+    letter-spacing: 0.15rem;
+    margin: 0 0 0.35rem 0;
+  }
+}
+
+@media (max-height: 800px) {
+  .mode-title {
+    font-size: 1.1rem;
+    letter-spacing: 0.1rem;
+    margin: 0 0 0.25rem 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .mode-title {
+    font-size: 1rem;
+    letter-spacing: 0.08rem;
+    margin: 0 0 0.2rem 0;
+  }
+}
+
 .mode-description {
   font-size: 1rem;
   color: #93c5fd;
   margin: 0 0 1rem 0;
   font-weight: 300;
   letter-spacing: 0.05rem;
+}
+
+@media (max-height: 900px) {
+  .mode-description {
+    font-size: 0.875rem;
+    margin: 0 0 0.75rem 0;
+  }
+}
+
+@media (max-height: 800px) {
+  .mode-description {
+    font-size: 0.8125rem;
+    margin: 0 0 0.5rem 0;
+  }
+}
+
+@media (max-height: 700px) {
+  .mode-description {
+    font-size: 0.75rem;
+    margin: 0 0 0.4rem 0;
+  }
 }
 
 .mode-status {
@@ -877,10 +1111,57 @@ onUnmounted(() => {
   width: 100%;
 }
 
+@media (max-height: 900px) {
+  .back-button {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9375rem;
+    max-width: 250px;
+  }
+}
+
+@media (max-height: 800px) {
+  .back-button {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    max-width: 220px;
+    gap: 0.5rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .back-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    max-width: 200px;
+    gap: 0.4rem;
+  }
+}
+
 .back-button svg {
   width: 24px;
   height: 24px;
   transition: transform 0.3s ease;
+}
+
+@media (max-height: 900px) {
+  .back-button svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-height: 800px) {
+  .back-button svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-height: 700px) {
+  .back-button svg {
+    width: 16px;
+    height: 16px;
+  }
 }
 
 .back-button:hover {
@@ -905,6 +1186,27 @@ onUnmounted(() => {
   color: rgba(147, 197, 253, 0.6);
   letter-spacing: 0.1rem;
   text-transform: uppercase;
+}
+
+@media (max-height: 900px) {
+  .menu-footer {
+    font-size: 0.75rem;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-height: 800px) {
+  .menu-footer {
+    font-size: 0.6875rem;
+    gap: 1rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .menu-footer {
+    font-size: 0.625rem;
+    gap: 0.75rem;
+  }
 }
 
 .version {
