@@ -24,6 +24,7 @@ jobs:
           node-version: '20.x'
 
       - name: npm install, build, and test
+        working-directory: ./starfall-dominion
         run: |
           npm install
           npm run build --if-present
@@ -48,18 +49,12 @@ jobs:
         with:
           name: node-app
       
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_E85A679BEDA24E808B201259D28F9EEB }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0E7E14E1C3A2427780308396EF5A20ED }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_8E56BC807A1A47AEB40DF2AF4FFE736B }}
-
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'Starfall-Dominion'
-          slot-name: 'Production'
-          package: .
+          publish-profile: ${{ secrets.STARFALL_PUBLISH_PROFILE }}
+          package: ./starfall-dominion/.output/public
+
           
