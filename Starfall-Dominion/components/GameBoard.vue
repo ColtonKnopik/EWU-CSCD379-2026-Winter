@@ -57,6 +57,28 @@
                 :current-player="currentPlayer"
                 @click="handleCellClick(row - 1, col - 1)"
               />
+              <Daft
+                v-else-if="getUnitAt(row - 1, col - 1)!.unitType === 'daft'"
+                :ref="(el: any) => setUnitRef(getUnitAt(row - 1, col - 1)?.id, el)"
+                :player="getUnitAt(row - 1, col - 1)!.player"
+                :health="getUnitAt(row - 1, col - 1)!.health"
+                :max-health="getUnitAt(row - 1, col - 1)!.maxHealth"
+                :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
+                :is-selected="selectedUnitId === getUnitAt(row - 1, col - 1)!.id"
+                :current-player="currentPlayer"
+                @click="handleCellClick(row - 1, col - 1)"
+              />
+              <Punk
+                v-else-if="getUnitAt(row - 1, col - 1)!.unitType === 'punk'"
+                :ref="(el: any) => setUnitRef(getUnitAt(row - 1, col - 1)?.id, el)"
+                :player="getUnitAt(row - 1, col - 1)!.player"
+                :health="getUnitAt(row - 1, col - 1)!.health"
+                :max-health="getUnitAt(row - 1, col - 1)!.maxHealth"
+                :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
+                :is-selected="selectedUnitId === getUnitAt(row - 1, col - 1)!.id"
+                :current-player="currentPlayer"
+                @click="handleCellClick(row - 1, col - 1)"
+              />
             </template>
           </div>
         </div>
@@ -100,6 +122,30 @@
           :current-player="currentPlayer"
           :style="getAnimationStyle(anim)"
         />
+        <Daft
+          v-for="anim in animatingUnits.filter(a => a.unit.unitType === 'daft')"
+          :key="anim.unitId"
+          :ref="(el: any) => setUnitRef(anim.unitId, el)"
+          :player="anim.unit.player"
+          :health="anim.unit.health"
+          :max-health="anim.unit.maxHealth"
+          :actions-remaining="anim.unit.actionsRemaining"
+          :is-selected="selectedUnitId === anim.unitId"
+          :current-player="currentPlayer"
+          :style="getAnimationStyle(anim)"
+        />
+        <Punk
+          v-for="anim in animatingUnits.filter(a => a.unit.unitType === 'punk')"
+          :key="anim.unitId"
+          :ref="(el: any) => setUnitRef(anim.unitId, el)"
+          :player="anim.unit.player"
+          :health="anim.unit.health"
+          :max-health="anim.unit.maxHealth"
+          :actions-remaining="anim.unit.actionsRemaining"
+          :is-selected="selectedUnitId === anim.unitId"
+          :current-player="currentPlayer"
+          :style="getAnimationStyle(anim)"
+        />
       </div>
     </div>
   </div>
@@ -111,6 +157,8 @@ import Cell, { type TerrainType } from '~~/components/Cell.vue'
 import Captain from '~~/components/Units/Captain.vue'
 import Berserker from '~~/components/Units/Berserker.vue'
 import Marine from '~~/components/Units/Marine.vue'
+import Daft from '~~/components/Units/Daft.vue'
+import Punk from '~~/components/Units/Punk.vue'
 import { useUnitAnimation } from '~~/composables/useUnitAnimation'
 import type { Unit as UnitType, Player, CellPosition } from '~~/types/gameTypes'
 

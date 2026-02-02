@@ -25,14 +25,15 @@
           </div>
           <div class="unit-details">
             <h3>{{ unit.name }}</h3>
+            <p class="unit-description">{{ unit.description }}</p>
             <div class="unit-stats">
               <div class="stat">
                 <span class="stat-label">HP:</span>
-                <span class="stat-value">{{ unit.health }}</span>
+                <span class="stat-value">{{ unit.maxHealth }}</span>
               </div>
               <div class="stat">
                 <span class="stat-label">ATK:</span>
-                <span class="stat-value">{{ unit.attack }}</span>
+                <span class="stat-value">{{ unit.attackPower }}</span>
               </div>
               <div class="stat">
                 <span class="stat-label">Move:</span>
@@ -61,18 +62,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { type UnitType } from '~~/types/gameTypes'
-
-interface UnitTemplate {
-  type: UnitType
-  name: string
-  cost: number
-  health: number
-  attack: number
-  moveRange: number
-  attackRange: number
-  image: string
-}
+import { getPurchasableUnits, type UnitDefinition } from '~~/data/unitDefinitions'
 
 interface Props {
   row: number
@@ -87,30 +79,15 @@ const emit = defineEmits<{
   purchase: [unitType: UnitType, cost: number]
 }>()
 
-const availableUnits: UnitTemplate[] = [
-  {
-    type: 'berserker',
-    name: 'Berserker',
-    cost: 50,
-    health: 100,
-    attack: 25,
-    moveRange: 2,
-    attackRange: 1,
-    image: new URL('../data/sprites/Berserker.png', import.meta.url).href
-  },
-  {
-    type: 'marine',
-    name: 'Marine',
-    cost: 75,
-    health: 75,
-    attack: 20,
-    moveRange: 2,
-    attackRange: 2,
-    image: new URL('../data/sprites/Marine.png', import.meta.url).href
-  }
-]
+// Get purchasable units from centralized definitions
+const availableUnits = computed(() => {
+  return getPurchasableUnits().map(unit => ({
+    ...unit,
+    image: new URL(`../data/sprites/${unit.spritePath}`, import.meta.url).href
+  }))
+})
 
-function purchaseUnit(unit: UnitTemplate) {
+function purchaseUnit(unit: UnitDefinition & { image: string }) {
   if (props.availableGold >= unit.cost) {
     emit('purchase', unit.type, unit.cost)
   }
@@ -275,6 +252,14 @@ function purchaseUnit(unit: UnitTemplate) {
   margin: 0;
   color: #fff;
   font-size: 18px;
+}
+
+.unit-description {
+  margin: 4px 0 12px 0;
+  color: #999;
+  font-size: 13px;
+  line-height: 1.4;
+  font-style: italic;
 }
 
 .unit-stats {
