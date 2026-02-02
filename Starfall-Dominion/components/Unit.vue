@@ -1,6 +1,6 @@
 <template>
   <div class="unit" 
-       :class="[player, unitType, { selected: isSelected }]" 
+       :class="[player, unitType, { selected: isSelected, invisible: health <= 0 }]" 
        @click.stop="$emit('click')">
     <div class="unit-content">
       <slot name="icon" />
@@ -110,6 +110,12 @@ const showActions = computed(() => {
 .unit.selected.player2 :deep(.unit-icon) {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 15px rgba(239, 68, 68, 0.8));
   transform: scaleX(-1); /* Keep flipped when selected */
+}
+
+/* Invisible unit (for death animations while sound plays) */
+.unit.invisible {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .unit.selected :deep(.unit-icon),

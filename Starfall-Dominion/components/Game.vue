@@ -38,6 +38,7 @@
         :get-cell-terrain="getCellTerrain"
         :get-flag-owner="getFlagOwner"
         :is-flag-contested="isFlagContested"
+        :explosions="explosions"
         @cell-click="onCellClick"
       />
     </div>
@@ -166,6 +167,14 @@ function isFlagContested(row: number, col: number): boolean {
 const actionMode = ref<'none' | 'move' | 'attack'>('none')
 const validMoves = ref<CellPosition[]>([])
 const validAttacks = ref<CellPosition[]>([])
+
+// Explosion tracking
+interface ExplosionData {
+  id: string
+  row: number
+  col: number
+}
+const explosions = ref<ExplosionData[]>([])
 
 // GameBoard ref for triggering sounds
 const gameBoardRef = ref<any>(null)
@@ -453,16 +462,54 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
       gameBoardRef.value.playUnitDeathSound(defender.id)
     }
     
-    // Remove dead unit after delay to let death sound play fully
-    setTimeout(() => {
-      const index = gameState.units.findIndex(u => u.id === defender.id)
-      if (index !== -1) {
-        gameState.units.splice(index, 1)
-      }
+    // Check if unit should explode (Daft or Punk)
+    const shouldExplode = defender.unitType === 'daft' || defender.unitType === 'punk'
+    
+    if (shouldExplode) {
+      // Make unit invisible and trigger explosion after 3 seconds
+      setTimeout(() => {
+        // Mark unit as invisible (set opacity to 0 via health = 0)
+        defender.health = 0
+        
+        // Trigger explosion
+        const explosionId = `explosion-${Date.now()}-${Math.random()}`
+        explosions.value.push({
+          id: explosionId,
+          row: defender.row,
+          col: defender.col
+        })
+        
+        // Remove explosion after animation completes (1.2 seconds)
+        setTimeout(() => {
+          const expIndex = explosions.value.findIndex(e => e.id === explosionId)
+          if (expIndex !== -1) {
+            explosions.value.splice(expIndex, 1)
+          }
+        }, 1200)
+      }, 3000) // 3 seconds - make unit invisible, show explosion
       
-      // Check win condition
-      checkWinCondition()
-    }, 5500) // 5.5 seconds to allow full death sound to play (death sound is ~5 seconds)
+      // Actually remove unit after death sound finishes
+      setTimeout(() => {
+        const index = gameState.units.findIndex(u => u.id === defender.id)
+        if (index !== -1) {
+          gameState.units.splice(index, 1)
+        }
+        
+        // Check win condition
+        checkWinCondition()
+      }, 5500) // 5.5 seconds - remove unit component (stops audio)
+    } else {
+      // Non-exploding units: remove after full death sound
+      setTimeout(() => {
+        const index = gameState.units.findIndex(u => u.id === defender.id)
+        if (index !== -1) {
+          gameState.units.splice(index, 1)
+        }
+        
+        // Check win condition
+        checkWinCondition()
+      }, 5500) // 5.5 seconds for normal death
+    }
   } else {
     // Normal damage
     defender.health -= damage

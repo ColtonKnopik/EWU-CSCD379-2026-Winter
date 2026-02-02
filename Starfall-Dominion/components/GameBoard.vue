@@ -1,29 +1,42 @@
 <template>
-  <div class="board-wrapper">
-    <div class="board-container">
+<div class="board-wrapper">
+  <!-- Dark overlay when explosion is active -->
+  <div 
+    class="explosion-darkening" 
+    :class="{ active: explosions.length > 0 }"
+  ></div>
+    
+    <div class="board-container" :class="{ shaking: explosions.length > 0 }">
       <div class="board">
+      <div
+        v-for="row in boardSize"
+        :key="row"
+        class="hex-row"
+        :class="{ offset: row % 2 === 0 }"
+      >
         <div
-          v-for="row in boardSize"
-          :key="row"
-          class="hex-row"
-          :class="{ offset: row % 2 === 0 }"
+          v-for="col in colsPerRow"
+          :key="`${row}-${col}`"
+          class="cell-wrapper"
+          :class="{ 'interaction-locked': isAnyUnitAnimating }"
         >
-          <div
-            v-for="col in colsPerRow"
-            :key="`${row}-${col}`"
-            class="cell-wrapper"
-            :class="{ 'interaction-locked': isAnyUnitAnimating }"
-          >
-            <Cell
-              :row="row - 1"
-              :col="col - 1"
-              :terrain-type="getCellTerrain(row - 1, col - 1)"
-              :flag-owner="getFlagOwner(row - 1, col - 1)"
-              :flag-contested="isFlagContested(row - 1, col - 1)"
-              @click="handleCellClick(row - 1, col - 1)"
-              :class="getCellHighlight(row - 1, col - 1)"
-            />
-            <template v-if="getUnitAt(row - 1, col - 1) && !isAnimating(getUnitAt(row - 1, col - 1)!.id)">
+          <Cell
+            :row="row - 1"
+            :col="col - 1"
+            :terrain-type="getCellTerrain(row - 1, col - 1)"
+            :flag-owner="getFlagOwner(row - 1, col - 1)"
+            :flag-contested="isFlagContested(row - 1, col - 1)"
+            @click="handleCellClick(row - 1, col - 1)"
+            :class="getCellHighlight(row - 1, col - 1)"
+          />
+            
+          <!-- Explosion effects -->
+          <Explosion
+            v-for="explosion in getExplosionsAt(row - 1, col - 1)"
+            :key="explosion.id"
+          />
+            
+          <template v-if="getUnitAt(row - 1, col - 1) && !isAnimating(getUnitAt(row - 1, col - 1)!.id)">
               <Captain
                 v-if="getUnitAt(row - 1, col - 1)!.unitType === 'captain'"
                 :ref="(el: any) => setUnitRef(getUnitAt(row - 1, col - 1)?.id, el)"
@@ -159,8 +172,15 @@ import Berserker from '~~/components/Units/Berserker.vue'
 import Marine from '~~/components/Units/Marine.vue'
 import Daft from '~~/components/Units/Daft.vue'
 import Punk from '~~/components/Units/Punk.vue'
+import Explosion from '~~/components/Explosion.vue'
 import { useUnitAnimation } from '~~/composables/useUnitAnimation'
 import type { Unit as UnitType, Player, CellPosition } from '~~/types/gameTypes'
+
+interface ExplosionData {
+  id: string
+  row: number
+  col: number
+}
 
 const props = defineProps<{
   boardSize: number
@@ -174,6 +194,7 @@ const props = defineProps<{
   getCellTerrain: (row: number, col: number) => TerrainType
   getFlagOwner: (row: number, col: number) => Player | null
   isFlagContested: (row: number, col: number) => boolean
+  explosions: ExplosionData[]
 }>()
 
 const emit = defineEmits<{
@@ -215,6 +236,11 @@ function playUnitDeathSound(unitId: string) {
   } else {
     console.warn(`Could not find unit ref or playDeathSound for: ${unitId}`)
   }
+}
+
+// Helper to get explosions at a specific position
+function getExplosionsAt(row: number, col: number) {
+  return props.explosions.filter(e => e.row === row && e.col === col)
 }
 
 defineExpose({
@@ -270,10 +296,81 @@ function getCellHighlight(row: number, col: number): string {
   background: #1a1a1a;
   border-radius: 8px;
   flex: 1;
+  position: relative;
+}
+
+/* Darkening overlay for explosions */
+.explosion-darkening {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  z-index: 50;
+  border-radius: 8px;
+}
+
+.explosion-darkening.active {
+  opacity: 1;
+  animation: explosionPulse 1.2s ease-out;
+}
+
+@keyframes explosionPulse {
+  0% {
+    background: radial-gradient(circle at center, rgba(255, 100, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 50%);
+  }
+  30% {
+    background: radial-gradient(circle at center, rgba(255, 100, 0, 0.1) 0%, rgba(0, 0, 0, 0.85) 50%);
+  }
+  100% {
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%);
+  }
 }
 
 .board-container {
   position: relative;
+  transition: transform 0.05s ease;
+}
+
+.board-container.shaking {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-3px, -2px);
+  }
+  20% {
+    transform: translate(3px, 2px);
+  }
+  30% {
+    transform: translate(-3px, 2px);
+  }
+  40% {
+    transform: translate(3px, -2px);
+  }
+  50% {
+    transform: translate(-3px, 0);
+  }
+  60% {
+    transform: translate(3px, 0);
+  }
+  70% {
+    transform: translate(-2px, 1px);
+  }
+  80% {
+    transform: translate(2px, -1px);
+  }
+  90% {
+    transform: translate(-1px, 0);
+  }
 }
 
 .board {
