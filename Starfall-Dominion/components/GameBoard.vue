@@ -35,6 +35,20 @@
             v-for="explosion in getExplosionsAt(row - 1, col - 1)"
             :key="explosion.id"
           />
+          
+          <!-- Attack Animations -->
+          <MeleeSlash
+            v-for="anim in getAnimationsAt(row - 1, col - 1).filter(a => a.animationType === 'melee-slash')"
+            :key="anim.id"
+          />
+          <RangedShot
+            v-for="anim in getAnimationsAt(row - 1, col - 1).filter(a => a.animationType === 'ranged-shot')"
+            :key="anim.id"
+          />
+          <ExplosiveAttack
+            v-for="anim in getAnimationsAt(row - 1, col - 1).filter(a => a.animationType === 'explosive-attack')"
+            :key="anim.id"
+          />
             
           <template v-if="getUnitAt(row - 1, col - 1) && !isAnimating(getUnitAt(row - 1, col - 1)!.id)">
               <Captain
@@ -173,7 +187,11 @@ import Marine from '~~/components/Units/Marine.vue'
 import Daft from '~~/components/Units/Daft.vue'
 import Punk from '~~/components/Units/Punk.vue'
 import Explosion from '~~/components/Explosion.vue'
+import MeleeSlash from '~~/components/AttackAnimations/MeleeSlash.vue'
+import RangedShot from '~~/components/AttackAnimations/RangedShot.vue'
+import ExplosiveAttack from '~~/components/AttackAnimations/ExplosiveAttack.vue'
 import { useUnitAnimation } from '~~/composables/useUnitAnimation'
+import { useAttackAnimations } from '~~/composables/useAttackAnimations'
 import type { Unit as UnitType, Player, CellPosition } from '~~/types/gameTypes'
 
 interface ExplosionData {
@@ -243,10 +261,14 @@ function getExplosionsAt(row: number, col: number) {
   return props.explosions.filter(e => e.row === row && e.col === col)
 }
 
+// Attack animation system
+const { activeAnimations, getAnimationsAt, triggerAttackAnimation } = useAttackAnimations()
+
 defineExpose({
   playUnitAttackSound,
   playUnitHurtSound,
-  playUnitDeathSound
+  playUnitDeathSound,
+  triggerAttackAnimation // Expose for Game.vue
 })
 
 // Animation system

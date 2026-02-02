@@ -444,10 +444,48 @@ function moveUnit(unit: UnitType, row: number, col: number) {
 }
 
 function attackUnit(attacker: UnitType, defender: UnitType) {
-  // Play attack sound for attacker
-  if (gameBoardRef.value) {
-    gameBoardRef.value.playUnitAttackSound(attacker.id)
+  // Determine attack animation type based on attacker unit type
+  let attackAnimationType: 'melee-slash' | 'ranged-shot' | 'explosive-attack'
+  let animationDuration: number
+  
+  switch (attacker.unitType) {
+    case 'captain':
+    case 'berserker':
+      attackAnimationType = 'melee-slash'
+      animationDuration = 500
+      break
+    case 'marine':
+      attackAnimationType = 'ranged-shot'
+      animationDuration = 600
+      break
+    case 'daft':
+    case 'punk':
+      attackAnimationType = 'explosive-attack'
+      animationDuration = 800
+      break
+    default:
+      attackAnimationType = 'melee-slash'
+      animationDuration = 500
   }
+  
+  // Trigger attack animation
+  if (gameBoardRef.value) {
+    gameBoardRef.value.triggerAttackAnimation(
+      attackAnimationType,
+      attacker.row,
+      attacker.col,
+      defender.row,
+      defender.col,
+      animationDuration
+    )
+  }
+  
+  // Play attack sound for attacker (slight delay to sync with animation)
+  setTimeout(() => {
+    if (gameBoardRef.value) {
+      gameBoardRef.value.playUnitAttackSound(attacker.id)
+    }
+  }, 100)
   
   const damage = attacker.attackPower
   const wouldDie = defender.health - damage <= 0
@@ -515,10 +553,12 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
     defender.health -= damage
     attacker.actionsRemaining--
     
-    // Play hurt sound for defender
-    if (gameBoardRef.value) {
-      gameBoardRef.value.playUnitHurtSound(defender.id)
-    }
+    // Play hurt sound for defender (delay to sync with animation impact)
+    setTimeout(() => {
+      if (gameBoardRef.value) {
+        gameBoardRef.value.playUnitHurtSound(defender.id)
+      }
+    }, animationDuration * 0.7) // Play hurt sound near end of animation
   }
   
   if (attacker.actionsRemaining > 0) {
