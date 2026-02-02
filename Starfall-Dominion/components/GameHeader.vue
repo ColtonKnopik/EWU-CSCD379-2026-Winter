@@ -177,12 +177,12 @@ function handleEndTurn() {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 10px 20px;
+  gap: 15px;
+  padding: 8px 16px;
   background: rgba(15, 15, 35, 0.6);
   border: 1px solid rgba(96, 165, 250, 0.2);
   backdrop-filter: blur(20px);
-  min-width: 360px;
+  min-width: 280px;
   transition: all 0.3s ease;
 }
 
@@ -309,8 +309,8 @@ function handleEndTurn() {
 .resources {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 8px 15px;
+  gap: 12px;
+  padding: 6px 12px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(96, 165, 250, 0.2);
   border-radius: 2px;
@@ -333,17 +333,17 @@ function handleEndTurn() {
 
 .resource-value {
   font-family: 'Orbitron', sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #fbbf24;
   text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 
 .resource-value.income {
   color: #34d399;
   text-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .resource-divider {
@@ -356,9 +356,10 @@ function handleEndTurn() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 30px;
+  padding: 0 20px;
   position: relative;
   flex: 1;
+  min-width: 280px;
 }
 
 .turn-counter {
@@ -414,26 +415,25 @@ function handleEndTurn() {
 .end-turn-btn {
   position: absolute;
   left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 30px;
+  padding: 8px 24px;
   background: rgba(15, 15, 35, 0.8);
   border: 1px solid rgba(251, 191, 36, 0.5);
   border-radius: 2px;
   color: #fbbf24;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+  letter-spacing: 1.5px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: visible;
-  transform-origin: center;
   z-index: 1;
+  white-space: nowrap;
 }
 
-/* Position animations */
+/* Position animations - use transforms from center */
 .end-turn-btn.position-left {
-  transform: translateX(-300%);
+  transform: translateX(-250px); /* Move further left to match visual balance */
   border-color: rgba(59, 130, 246, 0.6);
   box-shadow: 
     0 0 20px rgba(59, 130, 246, 0.3),
@@ -441,7 +441,7 @@ function handleEndTurn() {
 }
 
 .end-turn-btn.position-right {
-  transform: translateX(200%);
+  transform: translateX(200px); /* Move 200px right from center */
   border-color: rgba(168, 85, 247, 0.6);
   box-shadow: 
     0 0 20px rgba(168, 85, 247, 0.3),
@@ -586,11 +586,11 @@ function handleEndTurn() {
 }
 
 .end-turn-btn:hover {
-  transform: translateX(-50%) translateY(-2px) scale(1.05);
+  transform: translateX(-250px) translateY(-2px) scale(1.05);
 }
 
 .end-turn-btn.position-left:hover {
-  transform: translateX(-300%) translateY(-2px) scale(1.05);
+  transform: translateX(-250px) translateY(-2px) scale(1.05);
   border-color: rgba(59, 130, 246, 1);
   box-shadow: 
     0 0 30px rgba(59, 130, 246, 0.5),
@@ -598,7 +598,7 @@ function handleEndTurn() {
 }
 
 .end-turn-btn.position-right:hover {
-  transform: translateX(200%) translateY(-2px) scale(1.05);
+  transform: translateX(200px) translateY(-2px) scale(1.05);
   border-color: rgba(168, 85, 247, 1);
   box-shadow: 
     0 0 30px rgba(168, 85, 247, 0.5),
@@ -611,15 +611,15 @@ function handleEndTurn() {
 }
 
 .end-turn-btn:active {
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translateY(0) scale(1);
 }
 
 .end-turn-btn.position-left:active {
-  transform: translateX(-300%) translateY(0) scale(1);
+  transform: translateX(-250px) translateY(0) scale(1);
 }
 
 .end-turn-btn.position-right:active {
-  transform: translateX(200%) translateY(0) scale(1);
+  transform: translateX(200px) translateY(0) scale(1);
 }
 
 /* Utilities */
@@ -632,43 +632,112 @@ function handleEndTurn() {
 }
 
 /* Responsive design */
+@media (max-width: 1440px) {
+  .game-header {
+    padding: 12px 30px;
+  }
+  
+  .player-section {
+    min-width: 260px;
+    gap: 12px;
+  }
+  
+  .center-section {
+    padding: 0 15px;
+    min-width: 260px;
+  }
+  
+  .end-turn-btn {
+    padding: 8px 20px;
+    font-size: 12px;
+  }
+  
+  .end-turn-btn.position-left {
+    transform: translateX(-230px);
+  }
+  
+  .end-turn-btn.position-right {
+    transform: translateX(180px);
+  }
+  
+  .end-turn-btn.position-left:hover {
+    transform: translateX(-230px) translateY(-2px) scale(1.05);
+  }
+  
+  .end-turn-btn.position-right:hover {
+    transform: translateX(180px) translateY(-2px) scale(1.05);
+  }
+  
+  .end-turn-btn.position-left:active {
+    transform: translateX(-230px) translateY(0) scale(1);
+  }
+  
+  .end-turn-btn.position-right:active {
+    transform: translateX(180px) translateY(0) scale(1);
+  }
+}
+
 @media (max-width: 1200px) {
   .game-header {
     padding: 12px 20px;
   }
   
   .player-section {
-    min-width: 300px;
-    gap: 15px;
-    padding: 8px 15px;
+    min-width: 240px;
+    gap: 10px;
+    padding: 8px 12px;
+  }
+  
+  .player-name {
+    font-size: 14px;
+    letter-spacing: 1.5px;
+  }
+  
+  .resources {
+    gap: 10px;
+    padding: 6px 10px;
+  }
+  
+  .resource-value {
+    font-size: 15px;
+  }
+  
+  .resource-value.income {
+    font-size: 12px;
   }
   
   .center-section {
-    padding: 0 20px;
+    padding: 0 15px;
+    min-width: 240px;
+  }
+  
+  .end-turn-btn {
+    padding: 8px 18px;
+    font-size: 11px;
   }
   
   .end-turn-btn.position-left {
-    transform: translateX(-350%);
+    transform: translateX(-210px);
   }
   
   .end-turn-btn.position-right {
-    transform: translateX(250%);
+    transform: translateX(160px);
   }
   
   .end-turn-btn.position-left:hover {
-    transform: translateX(-350%) translateY(-2px) scale(1.05);
+    transform: translateX(-210px) translateY(-2px) scale(1.05);
   }
   
   .end-turn-btn.position-right:hover {
-    transform: translateX(250%) translateY(-2px) scale(1.05);
+    transform: translateX(160px) translateY(-2px) scale(1.05);
   }
   
   .end-turn-btn.position-left:active {
-    transform: translateX(-350%) translateY(0) scale(1);
+    transform: translateX(-210px) translateY(0) scale(1);
   }
   
   .end-turn-btn.position-right:active {
-    transform: translateX(250%) translateY(0) scale(1);
+    transform: translateX(160px) translateY(0) scale(1);
   }
 }
 
@@ -692,17 +761,21 @@ function handleEndTurn() {
   
   .end-turn-btn.position-left,
   .end-turn-btn.position-right {
-    transform: translateX(-50%);
+    position: relative;
+    left: auto;
+    right: auto;
+    transform: translateX(0);
+    margin-top: 10px;
   }
   
   .end-turn-btn.position-left:hover,
   .end-turn-btn.position-right:hover {
-    transform: translateX(-50%) translateY(-2px) scale(1.05);
+    transform: translateY(-2px) scale(1.05);
   }
   
   .end-turn-btn.position-left:active,
   .end-turn-btn.position-right:active {
-    transform: translateX(-50%) translateY(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
