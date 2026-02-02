@@ -210,7 +210,10 @@ function playUnitHurtSound(unitId: string) {
 function playUnitDeathSound(unitId: string) {
   const unitRef = unitRefs.value.get(unitId)
   if (unitRef && unitRef.playDeathSound) {
+    console.log(`Playing death sound for unit: ${unitId}`)
     unitRef.playDeathSound()
+  } else {
+    console.warn(`Could not find unit ref or playDeathSound for: ${unitId}`)
   }
 }
 

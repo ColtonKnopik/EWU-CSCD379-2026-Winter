@@ -72,7 +72,7 @@ export function useUnitSounds(sounds: UnitSounds) {
   }
 
   function playDeathSound() {
-    playSound('death', 0.7)
+    playSound('death', 0.7) 
   }
 
   onUnmounted(() => {

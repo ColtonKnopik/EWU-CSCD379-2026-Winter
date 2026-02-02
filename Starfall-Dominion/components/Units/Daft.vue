@@ -42,9 +42,9 @@ const daftIcon = new URL('../../data/sprites/Daft.png', import.meta.url).href
 
 // Setup unit-specific sounds
 const sounds = useUnitSounds({
-  attack: '/audio/units/daft/attack.mp3',
+  attack: '/audio/units/daft/attack.m4a',
   hurt: '/audio/units/daft/hurt.mp3',
-  death: '/audio/units/daft/death.mp3'
+  death: '/audio/units/daft/death.m4a'
 })
 
 // Expose sound methods to parent

@@ -440,21 +440,20 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
     gameBoardRef.value.playUnitAttackSound(attacker.id)
   }
   
-  defender.health -= attacker.attackPower
-  attacker.actionsRemaining--
+  const damage = attacker.attackPower
+  const wouldDie = defender.health - damage <= 0
   
-  // Play hurt sound for defender if still alive
-  if (defender.health > 0 && gameBoardRef.value) {
-    gameBoardRef.value.playUnitHurtSound(defender.id)
-  }
-  
-  if (defender.health <= 0) {
-    // Play death sound
+  if (wouldDie) {
+    // Set health to 1 temporarily so unit still renders
+    defender.health = 1
+    attacker.actionsRemaining--
+    
+    // Play death sound immediately
     if (gameBoardRef.value) {
       gameBoardRef.value.playUnitDeathSound(defender.id)
     }
     
-    // Remove dead unit after a short delay to let death sound play
+    // Remove dead unit after delay to let death sound play fully
     setTimeout(() => {
       const index = gameState.units.findIndex(u => u.id === defender.id)
       if (index !== -1) {
@@ -463,7 +462,16 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
       
       // Check win condition
       checkWinCondition()
-    }, 100)
+    }, 5500) // 5.5 seconds to allow full death sound to play (death sound is ~5 seconds)
+  } else {
+    // Normal damage
+    defender.health -= damage
+    attacker.actionsRemaining--
+    
+    // Play hurt sound for defender
+    if (gameBoardRef.value) {
+      gameBoardRef.value.playUnitHurtSound(defender.id)
+    }
   }
   
   if (attacker.actionsRemaining > 0) {

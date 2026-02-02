@@ -42,9 +42,9 @@ const punkIcon = new URL('../../data/sprites/Punk.png', import.meta.url).href
 
 // Setup unit-specific sounds
 const sounds = useUnitSounds({
-  attack: '/audio/units/punk/attack.mp3',
+  attack: '/audio/units/punk/attack.m4a',
   hurt: '/audio/units/punk/hurt.mp3',
-  death: '/audio/units/punk/death.mp3'
+  death: '/audio/units/punk/death.m4a'
 })
 
 // Expose sound methods to parent
