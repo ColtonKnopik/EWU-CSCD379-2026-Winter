@@ -298,14 +298,15 @@ function onCellClick(row: number, col: number) {
   const clickedUnit = getUnitAt(row, col)
   const terrain = getCellTerrain(row, col)
   
-  // Check if clicking on spawn point with no unit
-  if (!clickedUnit && canSpawnOnTerrain(terrain)) {
-    // Check if this is the current player's spawn
-    const isPlayer1Spawn = row <= 2 && col <= 2
-    const isPlayer2Spawn = row >= 5 && col >= 5
-    
-    if ((gameState.currentPlayer === 'player1' && isPlayer1Spawn) ||
-        (gameState.currentPlayer === 'player2' && isPlayer2Spawn)) {
+  // Check if clicking on a spawn point (purple cell) with no unit
+  const isSpawnTerrain = terrain === 'spawn'
+  const isPlayer1Side = col <= 3  // Left half of the board
+  const isPlayer2Side = col >= 4  // Right half of the board
+  
+  if (!clickedUnit && isSpawnTerrain) {
+    // Check if this spawn point belongs to the current player
+    if ((gameState.currentPlayer === 'player1' && isPlayer1Side) ||
+        (gameState.currentPlayer === 'player2' && isPlayer2Side)) {
       shopSpawnPoint.value = { row, col }
       showShop.value = true
       return

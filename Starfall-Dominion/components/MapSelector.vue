@@ -22,6 +22,14 @@
           class="map-card"
           @click="selectMap(map.id)"
         >
+          <div class="map-preview-container">
+            <MapPreview 
+              v-if="map.terrain_data" 
+              :terrain-data="map.terrain_data"
+              :size="180"
+            />
+            <div v-else class="loading-preview">Loading...</div>
+          </div>
           <div class="map-header">
             <h3>{{ map.name }}</h3>
           </div>
@@ -48,6 +56,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import MapPreview from '~~/components/MapPreview.vue'
 
 const emit = defineEmits<{
   close: []
@@ -65,7 +74,21 @@ async function fetchMaps() {
   try {
     loading.value = true
     const response: any = await $fetch('/api/maps')
-    maps.value = response.data
+    
+    // Fetch full data including terrain for each map
+    const mapsWithTerrain = await Promise.all(
+      response.data.map(async (map: any) => {
+        try {
+          const fullMap: any = await $fetch(`/api/maps/${map.id}`)
+          return fullMap.data
+        } catch (error) {
+          console.error(`Failed to load terrain for map ${map.id}:`, error)
+          return map
+        }
+      })
+    )
+    
+    maps.value = mapsWithTerrain
   } catch (error) {
     console.error('Failed to fetch maps:', error)
   } finally {
@@ -196,10 +219,12 @@ function formatDate(dateString: string) {
 .map-card {
   background: #2a2a2a;
   border-radius: 12px;
-  padding: 20px;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.2s;
   border: 3px solid transparent;
+  display: flex;
+  flex-direction: column;
 }
 
 .map-card:hover {
@@ -209,31 +234,49 @@ function formatDate(dateString: string) {
   box-shadow: 0 8px 16px rgba(0,0,0,0.3);
 }
 
+.map-preview-container {
+  width: 100%;
+  height: 180px;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 2px solid #444;
+}
+
+.loading-preview {
+  color: #999;
+  font-size: 14px;
+}
+
 .map-header {
-  margin-bottom: 10px;
+  padding: 15px 15px 10px;
 }
 
 .map-header h3 {
   margin: 0;
   color: #fff;
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .map-description {
   color: #aaa;
-  font-size: 14px;
-  margin: 0 0 15px 0;
-  min-height: 40px;
+  font-size: 13px;
+  margin: 0;
+  padding: 0 15px 10px;
+  min-height: 36px;
+  line-height: 1.4;
 }
 
 .map-footer {
   border-top: 1px solid #444;
-  padding-top: 10px;
+  padding: 10px 15px;
+  margin-top: auto;
 }
 
 .map-footer small {
   color: #666;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .selector-actions {

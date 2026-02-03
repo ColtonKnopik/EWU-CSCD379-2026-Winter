@@ -53,21 +53,39 @@
     </div>
 
     <div class="board-wrapper">
-      <div class="board">
-        <div
-          v-for="row in BOARD_SIZE"
-          :key="row"
-          class="hex-row"
-          :class="{ offset: row % 2 === 0 }"
-        >
-          <Cell
-            v-for="col in COLS_PER_ROW"
-            :key="`${row}-${col}`"
-            :row="row - 1"
-            :col="col - 1"
-            :terrain-type="getCellTerrain(row - 1, col - 1)"
-            @click="onCellClick(row - 1, col - 1)"
-          />
+      <div class="editor-columns">
+        <!-- Main Board -->
+        <div class="board-container">
+          <h3 class="section-title">Map Editor</h3>
+          <div class="board">
+            <div
+              v-for="row in BOARD_SIZE"
+              :key="row"
+              class="hex-row"
+              :class="{ offset: row % 2 === 0 }"
+            >
+              <Cell
+                v-for="col in COLS_PER_ROW"
+                :key="`${row}-${col}`"
+                :row="row - 1"
+                :col="col - 1"
+                :terrain-type="getCellTerrain(row - 1, col - 1)"
+                @click="onCellClick(row - 1, col - 1)"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="preview-container">
+          <h3 class="section-title">Live Preview</h3>
+          <div class="preview-box">
+            <MapPreview 
+              :terrain-data="Array.from(terrainMap.entries())"
+              :size="280"
+            />
+          </div>
+          <p class="preview-hint">This is how your map will appear in the map selector</p>
         </div>
       </div>
     </div>
@@ -112,6 +130,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import Cell, { type TerrainType } from '~~/components/Cell.vue'
+import MapPreview from '~~/components/MapPreview.vue'
 
 const BOARD_SIZE = 8
 const COLS_PER_ROW = 8
@@ -480,15 +499,77 @@ function formatDate(dateString: string) {
 .board-wrapper {
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   padding: 20px;
   background: #1a1a1a;
   border-radius: 8px;
 }
 
+.editor-columns {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  max-width: 1400px;
+  width: 100%;
+}
+
+.board-container {
+  flex: 1;
+}
+
+.section-title {
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  text-align: center;
+}
+
 .board {
   display: flex;
   flex-direction: column;
+}
+
+.preview-container {
+  width: 320px;
+  background: #0f0f0f;
+  padding: 20px;
+  border-radius: 8px;
+  border: 2px solid #333;
+  position: sticky;
+  top: 20px;
+}
+
+.preview-box {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 280px;
+  border: 1px solid #444;
+}
+
+.preview-hint {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  margin: 15px 0 0 0;
+  line-height: 1.4;
+}
+
+@media (max-width: 1200px) {
+  .editor-columns {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .preview-container {
+    position: relative;
+    width: 100%;
+    max-width: 400px;
+  }
 }
 
 .hex-row {
