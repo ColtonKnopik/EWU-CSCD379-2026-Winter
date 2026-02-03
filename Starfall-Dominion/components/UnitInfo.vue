@@ -46,7 +46,11 @@
         
         <div class="stats-grid">
           <div class="stat-item">
-            <span class="stat-icon">⚔️</span>
+            <div class="stat-icon-wrapper">
+              <svg class="stat-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
             <div class="stat-details">
               <span class="stat-label rajdhani-font">ATTACK</span>
               <span class="stat-value orbitron-font">{{ displayInfo.data.attackPower }}</span>
@@ -54,7 +58,12 @@
           </div>
           
           <div class="stat-item">
-            <span class="stat-icon">👟</span>
+            <div class="stat-icon-wrapper">
+              <svg class="stat-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <path d="M12 6v6l4 2" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
             <div class="stat-details">
               <span class="stat-label rajdhani-font">MOVE</span>
               <span class="stat-value orbitron-font">{{ displayInfo.data.moveRange }}</span>
@@ -62,7 +71,13 @@
           </div>
           
           <div class="stat-item">
-            <span class="stat-icon">🎯</span>
+            <div class="stat-icon-wrapper">
+              <svg class="stat-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <circle cx="12" cy="12" r="10" stroke-width="2"/>
+                <circle cx="12" cy="12" r="6" stroke-width="2"/>
+                <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              </svg>
+            </div>
             <div class="stat-details">
               <span class="stat-label rajdhani-font">RANGE</span>
               <span class="stat-value orbitron-font">{{ displayInfo.data.attackRange }}</span>
@@ -301,11 +316,30 @@ const healthPercentage = computed(() => {
 .health-bar-container {
   position: relative;
   width: 100%;
-  height: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(96, 165, 250, 0.3);
+  height: 24px;
+  background: rgba(0, 5, 15, 0.8);
+  border: 1px solid rgba(96, 165, 250, 0.4);
   border-radius: 2px;
   overflow: hidden;
+  box-shadow: 
+    inset 0 0 10px rgba(0, 0, 0, 0.5),
+    0 0 5px rgba(96, 165, 250, 0.2);
+}
+
+/* Grid pattern background */
+.health-bar-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(0deg, transparent 24%, rgba(96, 165, 250, 0.05) 25%, rgba(96, 165, 250, 0.05) 26%, transparent 27%, transparent 74%, rgba(96, 165, 250, 0.05) 75%, rgba(96, 165, 250, 0.05) 76%, transparent 77%, transparent),
+    linear-gradient(90deg, transparent 24%, rgba(96, 165, 250, 0.05) 25%, rgba(96, 165, 250, 0.05) 26%, transparent 27%, transparent 74%, rgba(96, 165, 250, 0.05) 75%, rgba(96, 165, 250, 0.05) 76%, transparent 77%, transparent);
+  background-size: 4px 4px;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .health-bar {
@@ -313,9 +347,108 @@ const healthPercentage = computed(() => {
   top: 0;
   left: 0;
   height: 100%;
-  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 50%, #34d399 100%);
+  background: linear-gradient(90deg, 
+    rgba(59, 130, 246, 0.6) 0%, 
+    rgba(96, 165, 250, 0.8) 50%, 
+    rgba(147, 197, 253, 0.9) 100%
+  );
+  box-shadow: 
+    0 0 15px rgba(96, 165, 250, 0.8),
+    0 0 30px rgba(96, 165, 250, 0.4),
+    inset 0 0 15px rgba(147, 197, 253, 0.4);
   transition: width 0.3s ease;
-  box-shadow: 0 0 10px rgba(52, 211, 153, 0.5);
+  position: relative;
+  overflow: hidden;
+  animation: hologram-flicker 3s infinite;
+}
+
+/* Hologram scan lines */
+.health-bar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  pointer-events: none;
+  z-index: 2;
+  animation: scan-lines 0.5s linear infinite;
+}
+
+/* Moving light sweep */
+.health-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255, 255, 255, 0.6), 
+    transparent
+  );
+  animation: health-shimmer 3s infinite;
+  z-index: 3;
+}
+
+/* Hologram flicker effect */
+@keyframes hologram-flicker {
+  0%, 100% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  50% {
+    opacity: 0.95;
+    filter: brightness(1.1);
+  }
+  51% {
+    opacity: 0.92;
+    filter: brightness(0.95);
+  }
+  52% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  93% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+  94% {
+    opacity: 0.9;
+    filter: brightness(1.15);
+  }
+  95% {
+    opacity: 1;
+    filter: brightness(1);
+  }
+}
+
+/* Scan lines animation */
+@keyframes scan-lines {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(2px);
+  }
+}
+
+/* Shimmer animation */
+@keyframes health-shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
 }
 
 .health-text {
@@ -323,10 +456,47 @@ const healthPercentage = computed(() => {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 11px;
-  color: white;
-  text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
-  z-index: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e0f2fe;
+  text-shadow: 
+    0 0 5px rgba(96, 165, 250, 0.8),
+    0 0 10px rgba(96, 165, 250, 0.5),
+    0 0 2px rgba(0, 0, 0, 0.9);
+  z-index: 4;
+  letter-spacing: 1px;
+  animation: text-glitch 4s infinite;
+}
+
+@keyframes text-glitch {
+  0%, 100% {
+    opacity: 1;
+    text-shadow: 
+      0 0 5px rgba(96, 165, 250, 0.8),
+      0 0 10px rgba(96, 165, 250, 0.5),
+      0 0 2px rgba(0, 0, 0, 0.9);
+  }
+  94% {
+    opacity: 1;
+    text-shadow: 
+      0 0 5px rgba(96, 165, 250, 0.8),
+      0 0 10px rgba(96, 165, 250, 0.5),
+      0 0 2px rgba(0, 0, 0, 0.9);
+  }
+  95% {
+    opacity: 0.8;
+    text-shadow: 
+      -2px 0 2px rgba(255, 0, 0, 0.5),
+      2px 0 2px rgba(0, 255, 255, 0.5),
+      0 0 5px rgba(96, 165, 250, 0.8);
+  }
+  96% {
+    opacity: 1;
+    text-shadow: 
+      0 0 5px rgba(96, 165, 250, 0.8),
+      0 0 10px rgba(96, 165, 250, 0.5),
+      0 0 2px rgba(0, 0, 0, 0.9);
+  }
 }
 
 .actions-display {
@@ -361,22 +531,64 @@ const healthPercentage = computed(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   padding: 12px 8px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(96, 165, 250, 0.2);
   border-radius: 2px;
   transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(96, 165, 250, 0.1), 
+    transparent
+  );
+  transition: left 0.5s ease;
 }
 
 .stat-item:hover {
-  border-color: rgba(96, 165, 250, 0.5);
+  border-color: rgba(96, 165, 250, 0.6);
   background: rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.3);
 }
 
-.stat-icon {
-  font-size: 20px;
-  filter: grayscale(0.3);
+.stat-item:hover::before {
+  left: 100%;
+}
+
+.stat-icon-wrapper {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover .stat-icon-wrapper {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: rgba(96, 165, 250, 0.6);
+  box-shadow: 0 0 15px rgba(96, 165, 250, 0.4);
+}
+
+.stat-icon-svg {
+  width: 18px;
+  height: 18px;
+  color: #60a5fa;
+  filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.5));
 }
 
 .stat-details {
