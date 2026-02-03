@@ -40,12 +40,8 @@ defineEmits<{
 
 const marineIcon = new URL('../../data/sprites/Marine.png', import.meta.url).href
 
-// Setup unit-specific sounds
-const sounds = useUnitSounds({
-  attack: '/audio/units/marine/attack.mp3',
-  hurt: '/audio/units/marine/hurt.mp3',
-  death: '/audio/units/marine/death.mp3'
-})
+// Setup unit-specific sounds using unit type
+const sounds = useUnitSounds('marine')
 
 // Expose sound methods to parent
 defineExpose({

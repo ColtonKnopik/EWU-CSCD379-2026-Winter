@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 
-export type AttackAnimationType = 'melee-slash' | 'ranged-shot' | 'explosive-attack'
+export type AttackAnimationType = 'melee-slash' | 'ranged-shot' | 'explosive-attack' | 'charged-blast'
 
 export interface AttackAnimationData {
   id: string

@@ -40,12 +40,8 @@ defineEmits<{
 
 const berserkerIcon = new URL('../../data/sprites/Berserker.png', import.meta.url).href
 
-// Setup unit-specific sounds
-const sounds = useUnitSounds({
-  attack: '/audio/units/berserker/attack.mp3',
-  hurt: '/audio/units/berserker/hurt.mp3',
-  death: '/audio/units/berserker/death.mp3'
-})
+// Setup unit-specific sounds using unit type
+const sounds = useUnitSounds('berserker')
 
 // Expose sound methods to parent
 defineExpose({

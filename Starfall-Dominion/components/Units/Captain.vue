@@ -17,6 +17,7 @@
 
 <script setup lang="ts">
 import Unit from '~~/components/Unit.vue'
+import { useUnitSounds } from '~~/composables/useUnitSounds'
 import { type Player } from '~~/types/gameTypes'
 
 interface Props {
@@ -38,4 +39,14 @@ withDefaults(defineProps<Props>(), {
 defineEmits<{
   click: []
 }>()
+
+// Setup unit-specific sounds using unit type
+const sounds = useUnitSounds('captain')
+
+// Expose sound methods to parent
+defineExpose({
+  playAttackSound: sounds.playAttackSound,
+  playHurtSound: sounds.playHurtSound,
+  playDeathSound: sounds.playDeathSound
+})
 </script>

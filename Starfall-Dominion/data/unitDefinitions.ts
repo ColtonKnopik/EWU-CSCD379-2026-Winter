@@ -1,119 +1,177 @@
-import type { UnitType } from '~/types/gameTypes'
+import type { UnitType } from '~~/types/gameTypes'
+import type { AttackAnimationType } from '~~/composables/useAttackAnimations'
 
 export interface UnitDefinition {
+  // Basic Info
   type: UnitType
-  name: string
+  displayName: string
+  description: string
+  
+  // Stats
   cost: number
-  health: number
   maxHealth: number
   attackPower: number
   moveRange: number
   attackRange: number
   maxActions: number
+  
+  // Visual & Audio
   spritePath: string
-  description: string
+  attackAnimation: AttackAnimationType
+  attackAnimationDuration: number
+  
+  // Sound Paths
+  sounds: {
+    attack: string
+    hurt: string
+    death: string
+  }
+  
+  // Special Properties
+  explodeOnDeath?: boolean
+  canMove?: boolean // For captains
 }
 
-// Centralized unit definitions - single source of truth
 export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
   captain: {
     type: 'captain',
-    name: 'Captain',
-    cost: 0, // Cannot be purchased
-    health: 150,
+    displayName: 'Captain',
+    description: 'Your commander. Protect at all costs!',
+    cost: 0,
     maxHealth: 150,
-    attackPower: 15,
-    moveRange: 2,
-    attackRange: 2,
-    maxActions: 2,
+    attackPower: 30,
+    moveRange: 0,
+    attackRange: 1,
+    maxActions: 1,
     spritePath: 'Captain.png',
-    description: 'Your commander. If eliminated, you lose! Can recruit units and lead the charge.'
+    attackAnimation: 'melee-slash',
+    attackAnimationDuration: 500,
+    sounds: {
+      attack: '/audio/units/captain/attack.m4a',
+      hurt: '/audio/units/captain/hurt.mp3',
+      death: '/audio/units/captain/death.m4a'
+    },
+    canMove: false
   },
+  
   berserker: {
     type: 'berserker',
-    name: 'Berserker',
+    displayName: 'Berserker',
+    description: 'High damage melee unit with brutal attacks',
     cost: 50,
-    health: 100,
     maxHealth: 100,
     attackPower: 25,
     moveRange: 2,
     attackRange: 1,
     maxActions: 2,
     spritePath: 'Berserker.png',
-    description: 'High damage melee fighter. Devastating in close combat.'
+    attackAnimation: 'melee-slash',
+    attackAnimationDuration: 500,
+    sounds: {
+      attack: '/audio/units/berserker/attack.mp3',
+      hurt: '/audio/units/berserker/hurt.mp3',
+      death: '/audio/units/berserker/death.mp3'
+    }
   },
+  
   marine: {
     type: 'marine',
-    name: 'Marine',
-    cost: 75,
-    health: 75,
+    displayName: 'Marine',
+    description: 'Ranged unit with accurate bullet stream',
+    cost: 40,
     maxHealth: 75,
     attackPower: 20,
     moveRange: 2,
     attackRange: 2,
     maxActions: 2,
     spritePath: 'Marine.png',
-    description: 'Balanced ranged unit. Versatile and reliable.'
+    attackAnimation: 'ranged-shot',
+    attackAnimationDuration: 600,
+    sounds: {
+      attack: '/audio/units/marine/attack.mp3',
+      hurt: '/audio/units/marine/hurt.mp3',
+      death: '/audio/units/marine/death.mp3'
+    }
   },
+  
   daft: {
     type: 'daft',
-    name: 'Daft',
-    cost: 100,
-    health: 90,
-    maxHealth: 90,
-    attackPower: 22,
-    moveRange: 3,
-    attackRange: 2,
+    displayName: 'Daft',
+    description: 'Robot with powerful charged blast attack. Explodes on death!',
+    cost: 60,
+    maxHealth: 80,
+    attackPower: 30,
+    moveRange: 2,
+    attackRange: 1,
     maxActions: 2,
     spritePath: 'Daft.png',
-    description: 'Swift tactical unit. High mobility with solid firepower.'
+    attackAnimation: 'charged-blast',
+    attackAnimationDuration: 3000, // 2s charge + 1s blast
+    sounds: {
+      attack: '/audio/units/daft/attack.m4a', // Includes charge sound
+      hurt: '/audio/units/daft/hurt.mp3',
+      death: '/audio/units/daft/death.m4a'
+    },
+    explodeOnDeath: true
   },
+  
   punk: {
     type: 'punk',
-    name: 'Punk',
+    displayName: 'Punk',
+    description: 'Robot with powerful charged blast attack. Explodes on death!',
     cost: 60,
-    health: 85,
-    maxHealth: 85,
-    attackPower: 18,
+    maxHealth: 80,
+    attackPower: 30,
     moveRange: 2,
     attackRange: 1,
     maxActions: 2,
     spritePath: 'Punk.png',
-    description: 'Aggressive close-range fighter. Quick and unpredictable.'
+    attackAnimation: 'charged-blast',
+    attackAnimationDuration: 3000, // 2s charge + 1s blast
+    sounds: {
+      attack: '/audio/units/punk/attack.m4a', // Includes charge sound
+      hurt: '/audio/units/punk/hurt.mp3',
+      death: '/audio/units/punk/death.m4a'
+    },
+    explodeOnDeath: true
   }
 }
 
-// Get units that can be purchased (excludes captain)
+// Helper function to get unit definition
+export function getUnitDefinition(unitType: UnitType): UnitDefinition {
+  return UNIT_DEFINITIONS[unitType]
+}
+
+// Helper function to get purchasable units (excludes captain)
 export function getPurchasableUnits(): UnitDefinition[] {
   return Object.values(UNIT_DEFINITIONS).filter(unit => unit.cost > 0)
 }
 
-// Get unit definition by type
-export function getUnitDefinition(type: UnitType): UnitDefinition {
-  return UNIT_DEFINITIONS[type]
-}
-
-// Create a new unit instance from definition
-export function createUnitFromDefinition(
-  definition: UnitDefinition,
-  id: string,
+// Helper function to create a new unit instance
+export function createUnit(
+  unitType: UnitType,
   player: 'player1' | 'player2',
   row: number,
-  col: number
+  col: number,
+  id: string,
+  actionsRemaining: number = 0
 ) {
+  const def = getUnitDefinition(unitType)
+  
   return {
     id,
-    name: definition.name,
-    unitType: definition.type,
+    name: `${def.displayName}`,
+    unitType,
     player,
     row,
     col,
-    health: definition.health,
-    maxHealth: definition.maxHealth,
-    attackPower: definition.attackPower,
-    moveRange: definition.moveRange,
-    attackRange: definition.attackRange,
-    actionsRemaining: definition.maxActions,
-    maxActions: definition.maxActions
+    health: def.maxHealth,
+    maxHealth: def.maxHealth,
+    attackPower: def.attackPower,
+    moveRange: def.moveRange,
+    attackRange: def.attackRange,
+    actionsRemaining,
+    maxActions: def.maxActions
   }
 }
+

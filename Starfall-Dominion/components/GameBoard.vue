@@ -49,6 +49,18 @@
             v-for="anim in getAnimationsAt(row - 1, col - 1).filter(a => a.animationType === 'explosive-attack')"
             :key="anim.id"
           />
+          
+          <!-- Charged Blast animations - render once globally -->
+          <template v-if="row === 1 && col === 1">
+            <ChargedBlast
+              v-for="anim in activeAnimations.filter(a => a.animationType === 'charged-blast')"
+              :key="anim.id"
+              :attacker-row="anim.attackerRow"
+              :attacker-col="anim.attackerCol"
+              :defender-row="anim.defenderRow"
+              :defender-col="anim.defenderCol"
+            />
+          </template>
             
           <template v-if="getUnitAt(row - 1, col - 1) && !isAnimating(getUnitAt(row - 1, col - 1)!.id)">
               <Captain
@@ -190,6 +202,7 @@ import Explosion from '~~/components/Explosion.vue'
 import MeleeSlash from '~~/components/AttackAnimations/MeleeSlash.vue'
 import RangedShot from '~~/components/AttackAnimations/RangedShot.vue'
 import ExplosiveAttack from '~~/components/AttackAnimations/ExplosiveAttack.vue'
+import ChargedBlast from '~~/components/AttackAnimations/ChargedBlast.vue'
 import { useUnitAnimation } from '~~/composables/useUnitAnimation'
 import { useAttackAnimations } from '~~/composables/useAttackAnimations'
 import type { Unit as UnitType, Player, CellPosition } from '~~/types/gameTypes'

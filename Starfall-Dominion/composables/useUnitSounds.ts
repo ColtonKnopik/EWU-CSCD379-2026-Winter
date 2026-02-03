@@ -1,12 +1,12 @@
 import { ref, onUnmounted } from 'vue'
+import { getUnitDefinition } from '~~/data/unitDefinitions'
+import type { UnitType } from '~~/types/gameTypes'
 
-interface UnitSounds {
-  attack?: string
-  hurt?: string
-  death?: string
-}
-
-export function useUnitSounds(sounds: UnitSounds) {
+export function useUnitSounds(unitType: UnitType) {
+  // Get sound paths from unit definition
+  const unitDef = getUnitDefinition(unitType)
+  const sounds = unitDef.sounds
+  
   const audioCache = new Map<string, HTMLAudioElement>()
   const loadedSounds = ref<Set<string>>(new Set())
 
@@ -44,7 +44,7 @@ export function useUnitSounds(sounds: UnitSounds) {
     if (url) preloadAudio(url)
   })
 
-  function playSound(type: keyof UnitSounds, volume: number = 0.6) {
+  function playSound(type: 'attack' | 'hurt' | 'death', volume: number = 0.6) {
     const soundUrl = sounds[type]
     if (!soundUrl) return
     

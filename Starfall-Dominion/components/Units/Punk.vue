@@ -40,12 +40,8 @@ defineEmits<{
 
 const punkIcon = new URL('../../data/sprites/Punk.png', import.meta.url).href
 
-// Setup unit-specific sounds
-const sounds = useUnitSounds({
-  attack: '/audio/units/punk/attack.m4a',
-  hurt: '/audio/units/punk/hurt.mp3',
-  death: '/audio/units/punk/death.m4a'
-})
+// Setup unit-specific sounds using unit type
+const sounds = useUnitSounds('punk')
 
 // Expose sound methods to parent
 defineExpose({

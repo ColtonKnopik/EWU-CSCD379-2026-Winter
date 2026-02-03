@@ -79,6 +79,7 @@ import CaptainPlacementIndicator from '~~/components/CaptainPlacementIndicator.v
 import VictoryScreen from '~~/components/VictoryScreen.vue'
 import type { TerrainType } from '~~/components/Cell.vue'
 import baseMapData from '~~/data/baseMap.json'
+import { getUnitDefinition, createUnit } from '~~/data/unitDefinitions'
 import { 
   type GameState, 
   type Unit as UnitType, 
@@ -206,22 +207,15 @@ function onCellClick(row: number, col: number) {
     
     if (!isValidPlacement) return // Invalid placement zone
     
-    // Place the Captain
-    const captain: UnitType = {
-      id: `${placementPlayer.value}-captain`,
-      name: `${placementPlayer.value === 'player1' ? 'Player 1' : 'Player 2'} Captain`,
-      unitType: 'captain', 
-      player: placementPlayer.value,
+    // Place the Captain using unit definition
+    const captain = createUnit(
+      'captain',
+      placementPlayer.value,
       row,
       col,
-      health: 150,
-      maxHealth: 150,
-      attackPower: 30,
-      moveRange: 0,  
-      attackRange: 1,
-      actionsRemaining: 1,
-      maxActions: 1
-    }
+      `${placementPlayer.value}-captain`,
+      1 // Captains start with 1 action
+    )
     
     gameState.units.push(captain)
     
@@ -338,72 +332,16 @@ if (unit.actionsRemaining > 0) {
 }
 
 function addStartingUnits() {
-  // Add starting units for Player 1
+  // Add starting units for Player 1 using unit definitions
   gameState.units.push(
-    {
-      id: 'p1-unit1',
-      name: 'Berserker 1',
-      unitType: 'berserker',
-      player: 'player1',
-      row: 2,
-      col: 0,
-      health: 100,
-      maxHealth: 100,
-      attackPower: 25,
-      moveRange: 2,
-      attackRange: 1,
-      actionsRemaining: 2,
-      maxActions: 2
-    },
-    {
-      id: 'p1-unit2',
-      name: 'Marine 1',
-      unitType: 'marine',
-      player: 'player1',
-      row: 1,
-      col: 0,
-      health: 75,
-      maxHealth: 75,
-      attackPower: 20,
-      moveRange: 2,
-      attackRange: 2,
-      actionsRemaining: 2,
-      maxActions: 2
-    }
+    createUnit('berserker', 'player1', 2, 0, 'p1-unit1', 2),
+    createUnit('marine', 'player1', 1, 0, 'p1-unit2', 2)
   )
   
-  // Add starting units for Player 2
+  // Add starting units for Player 2 using unit definitions
   gameState.units.push(
-    {
-      id: 'p2-unit1',
-      name: 'Berserker 2',
-      unitType: 'berserker',
-      player: 'player2',
-      row: 5,
-      col: 7,
-      health: 100,
-      maxHealth: 100,
-      attackPower: 25,
-      moveRange: 2,
-      attackRange: 1,
-      actionsRemaining: 2,
-      maxActions: 2
-    },
-    {
-      id: 'p2-unit2',
-      name: 'Marine 2',
-      unitType: 'marine',
-      player: 'player2',
-      row: 6,
-      col: 7,
-      health: 75,
-      maxHealth: 75,
-      attackPower: 20,
-      moveRange: 2,
-      attackRange: 2,
-      actionsRemaining: 2,
-      maxActions: 2
-    }
+    createUnit('berserker', 'player2', 5, 7, 'p2-unit1', 2),
+    createUnit('marine', 'player2', 6, 7, 'p2-unit2', 2)
   )
   
   unitIdCounter = 5 // Reset counter after adding initial units
@@ -444,48 +382,28 @@ function moveUnit(unit: UnitType, row: number, col: number) {
 }
 
 function attackUnit(attacker: UnitType, defender: UnitType) {
-  // Determine attack animation type based on attacker unit type
-  let attackAnimationType: 'melee-slash' | 'ranged-shot' | 'explosive-attack'
-  let animationDuration: number
-  
-  switch (attacker.unitType) {
-    case 'captain':
-    case 'berserker':
-      attackAnimationType = 'melee-slash'
-      animationDuration = 500
-      break
-    case 'marine':
-      attackAnimationType = 'ranged-shot'
-      animationDuration = 600
-      break
-    case 'daft':
-    case 'punk':
-      attackAnimationType = 'explosive-attack'
-      animationDuration = 800
-      break
-    default:
-      attackAnimationType = 'melee-slash'
-      animationDuration = 500
-  }
+  // Get unit definition for attack animation data
+  const attackerDef = getUnitDefinition(attacker.unitType)
   
   // Trigger attack animation
   if (gameBoardRef.value) {
     gameBoardRef.value.triggerAttackAnimation(
-      attackAnimationType,
+      attackerDef.attackAnimation,
       attacker.row,
       attacker.col,
       defender.row,
       defender.col,
-      animationDuration
+      attackerDef.attackAnimationDuration
     )
   }
   
-  // Play attack sound for attacker (slight delay to sync with animation)
+  // Play attack sound (charged blast includes charge sound, so start at 0ms)
+  const soundDelay = attackerDef.attackAnimation === 'charged-blast' ? 0 : 100
   setTimeout(() => {
     if (gameBoardRef.value) {
       gameBoardRef.value.playUnitAttackSound(attacker.id)
     }
-  }, 100)
+  }, soundDelay)
   
   const damage = attacker.attackPower
   const wouldDie = defender.health - damage <= 0
@@ -500,8 +418,9 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
       gameBoardRef.value.playUnitDeathSound(defender.id)
     }
     
-    // Check if unit should explode (Daft or Punk)
-    const shouldExplode = defender.unitType === 'daft' || defender.unitType === 'punk'
+    // Check if unit should explode (use unit definition)
+    const defenderDef = getUnitDefinition(defender.unitType)
+    const shouldExplode = defenderDef.explodeOnDeath === true
     
     if (shouldExplode) {
       // Make unit invisible and trigger explosion after 3 seconds
@@ -558,7 +477,7 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
       if (gameBoardRef.value) {
         gameBoardRef.value.playUnitHurtSound(defender.id)
       }
-    }, animationDuration * 0.7) // Play hurt sound near end of animation
+    }, attackerDef.attackAnimationDuration * 0.7) // Play hurt sound near end of animation
   }
   
   if (attacker.actionsRemaining > 0) {
@@ -688,22 +607,15 @@ function handlePurchase(unitType: UnitType, cost: number) {
     goldState.player2.gold -= cost
   }
   
-  // Create unit stats based on type
-  const unitStats = unitType === 'berserker' 
-    ? { health: 100, maxHealth: 100, attackPower: 25, moveRange: 2, attackRange: 1, maxActions: 2 }
-    : { health: 75, maxHealth: 75, attackPower: 20, moveRange: 2, attackRange: 2, maxActions: 2 }
-  
-  // Add new unit
-  const newUnit: UnitType = {
-    id: `${gameState.currentPlayer}-unit${unitIdCounter++}`,
-    name: `${unitType === 'berserker' ? 'Berserker' : 'Marine'} ${unitIdCounter - 1}`,
+  // Create new unit using unit definition
+  const newUnit = createUnit(
     unitType,
-    player: gameState.currentPlayer,
-    row: shopSpawnPoint.value.row,
-    col: shopSpawnPoint.value.col,
-    ...unitStats,
-    actionsRemaining: 0  // Can't act on spawn turn
-  }
+    gameState.currentPlayer,
+    shopSpawnPoint.value.row,
+    shopSpawnPoint.value.col,
+    `${gameState.currentPlayer}-unit${unitIdCounter++}`,
+    0 // Can't act on spawn turn
+  )
   
   gameState.units.push(newUnit)
   
