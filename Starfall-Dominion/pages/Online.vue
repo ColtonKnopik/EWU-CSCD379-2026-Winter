@@ -80,18 +80,6 @@
           </div>
         </div>
 
-        <!-- Progress bar -->
-        <div class="progress-section">
-          <div class="progress-label">
-            <span>Development Progress</span>
-            <span class="progress-percent">{{ progressPercent }}%</span>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" :style="`width: ${progressPercent}%`"></div>
-            <div class="progress-glow"></div>
-          </div>
-        </div>
-
         <!-- Back button -->
         <button class="back-button" @click="goBack">
           <svg class="back-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -118,7 +106,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 
-const progressPercent = ref<number>(67);
 const currentTime = ref<string>('');
 
 const getParticleStyle = (index: number) => {
@@ -152,13 +139,6 @@ let timeInterval: number;
 onMounted(() => {
   updateTime();
   timeInterval = setInterval(updateTime, 1000) as unknown as number;
-  
-  // Slowly increment progress (simulation)
-  setInterval(() => {
-    if (progressPercent.value < 95) {
-      progressPercent.value += Math.random() * 0.5;
-    }
-  }, 2000);
 });
 
 onUnmounted(() => {
@@ -173,9 +153,10 @@ onUnmounted(() => {
 .online-placeholder {
   position: relative;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   background: #000000;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   font-family: 'Rajdhani', sans-serif;
   color: #ffffff;
 }
@@ -191,6 +172,26 @@ onUnmounted(() => {
   min-height: 100vh;
   padding: 2rem;
   gap: 3rem;
+}
+
+/* Fixed backgrounds */
+.space-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* Message Container */
@@ -354,75 +355,6 @@ onUnmounted(() => {
   letter-spacing: 0.05rem;
 }
 
-/* Progress Section */
-.progress-section {
-  width: 100%;
-}
-
-.progress-label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.875rem;
-  color: #93c5fd;
-  margin-bottom: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1rem;
-  font-weight: 600;
-}
-
-.progress-percent {
-  color: #60a5fa;
-  font-family: 'Orbitron', sans-serif;
-}
-
-.progress-bar {
-  position: relative;
-  width: 100%;
-  height: 8px;
-  background: rgba(20, 20, 45, 0.8);
-  border: 1px solid rgba(96, 165, 250, 0.3);
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  transition: width 0.5s ease;
-  position: relative;
-}
-
-.progress-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: progress-shine 2s ease-in-out infinite;
-}
-
-@keyframes progress-shine {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.progress-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(96, 165, 250, 0.4), transparent);
-  animation: progress-glow 2s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes progress-glow {
-  0%, 100% { opacity: 0.3; }
-  50% { opacity: 1; }
-}
-
 /* Back Button */
 .back-button {
   position: relative;
@@ -441,6 +373,7 @@ onUnmounted(() => {
   transition: all 0.3s ease;
   overflow: hidden;
   backdrop-filter: blur(10px);
+  text-decoration: none;
 }
 
 .back-button:hover {
@@ -448,6 +381,10 @@ onUnmounted(() => {
   border-color: rgba(96, 165, 250, 0.6);
   transform: translateY(-4px);
   box-shadow: 0 10px 30px rgba(96, 165, 250, 0.3);
+}
+
+.back-button:active {
+  transform: translateY(-2px);
 }
 
 .back-button:hover .card-corner {
