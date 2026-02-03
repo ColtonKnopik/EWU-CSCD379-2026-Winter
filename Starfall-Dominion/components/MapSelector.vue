@@ -8,18 +8,11 @@
         <p>Loading maps...</p>
       </div>
       
-      <div v-else-if="maps.length === 0" class="no-maps">
-        <p>No maps available!</p>
-        <NuxtLink to="/MapEditor" class="create-map-btn">
-          Create Your First Map
-        </NuxtLink>
-      </div>
-      
       <div v-else class="maps-grid">
         <div
           v-for="map in maps"
-          :key="map.id"
-          class="map-card"
+          :key="map.id || 'default'"
+          :class="['map-card', { 'default-map': map.isDefault }]"
           @click="selectMap(map.id)"
         >
           <div class="map-preview-container">
@@ -31,13 +24,16 @@
             <div v-else class="loading-preview">Loading...</div>
           </div>
           <div class="map-header">
-            <h3>{{ map.name }}</h3>
+            <h3>
+              {{ map.name }}
+              <span v-if="map.isDefault" class="default-badge">DEFAULT</span>
+            </h3>
           </div>
           <p v-if="map.description" class="map-description">
             {{ map.description }}
           </p>
           <div class="map-footer">
-            <small>Updated: {{ formatDate(map.updated_at) }}</small>
+            <small>{{ map.isDefault ? 'Built-in Map' : `Updated: ${formatDate(map.updated_at)}` }}</small>
           </div>
         </div>
       </div>
@@ -57,14 +53,26 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import MapPreview from '~~/components/MapPreview.vue'
+import baseMapData from '~~/data/baseMap.json'
 
 const emit = defineEmits<{
   close: []
-  select: [mapId: number]
+  select: [mapId: number | null]
 }>()
 
 const maps = ref<any[]>([])
 const loading = ref(true)
+
+// Create default map object from baseMap.json
+const defaultMap = {
+  id: null,
+  name: 'Default Map',
+  description: 'The standard battlefield',
+  terrain_data: baseMapData,
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+  isDefault: true
+}
 
 onMounted(async () => {
   await fetchMaps()
@@ -88,15 +96,18 @@ async function fetchMaps() {
       })
     )
     
-    maps.value = mapsWithTerrain
+    // Always include the default map as the first option
+    maps.value = [defaultMap, ...mapsWithTerrain]
   } catch (error) {
     console.error('Failed to fetch maps:', error)
+    // On error, just show the default map
+    maps.value = [defaultMap]
   } finally {
     loading.value = false
   }
 }
 
-function selectMap(mapId: number) {
+function selectMap(mapId: number | null) {
   emit('select', mapId)
 }
 
@@ -227,11 +238,19 @@ function formatDate(dateString: string) {
   flex-direction: column;
 }
 
+.map-card.default-map {
+  border-color: #666;
+}
+
 .map-card:hover {
   background: #333;
   border-color: #4caf50;
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.map-card.default-map:hover {
+  border-color: #2196f3;
 }
 
 .map-preview-container {
@@ -257,6 +276,19 @@ function formatDate(dateString: string) {
   margin: 0;
   color: #fff;
   font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.default-badge {
+  font-size: 10px;
+  background: #2196f3;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
 }
 
 .map-description {

@@ -38,9 +38,15 @@ const showMapSelectionDialog = (): void => {
     showMapSelector.value = true;
 };
 
-const playWithCustomMap = (mapId: number): void => {
+const playWithCustomMap = (mapId: number | null): void => {
     console.log('Playing with map:', mapId);
-    navigateTo(`/game?mapId=${mapId}`);
+    if (mapId === null) {
+      // Use default map (no mapId parameter)
+      navigateTo('/game');
+    } else {
+      // Use custom map from database
+      navigateTo(`/game?mapId=${mapId}`);
+    }
 };
 
 const openMapEditor = (): void => {
