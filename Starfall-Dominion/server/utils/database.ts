@@ -5,12 +5,26 @@ import { join, dirname } from 'path'
 let db: Database.Database | null = null
 
 export function getDatabase(): Database.Database {
-  if (!db) {
-    // Use Azure persistent storage in production, local path in development
-    const isProduction = process.env.NODE_ENV === 'production'
-    const dbPath = isProduction 
-      ? '/home/data/starfall.db'  // Azure App Service persistent storage
-      : join(process.cwd(), 'starfall.db')  // Local development
+if (!db) {
+  // Use Azure persistent storage in production, local path in development
+  const isProduction = process.env.NODE_ENV === 'production'
+    
+  // Try multiple locations on Azure
+  let dbPath: string
+  if (isProduction) {
+    // Try /home/site first, fallback to local
+    if (existsSync('/home/site')) {
+      dbPath = '/home/site/starfall.db'
+    } else if (existsSync('/home/data')) {
+      dbPath = '/home/data/starfall.db'
+    } else {
+      // Fallback to working directory (not persistent but works)
+      dbPath = join(process.cwd(), 'starfall.db')
+      console.warn('⚠️ Using non-persistent database location:', dbPath)
+    }
+  } else {
+    dbPath = join(process.cwd(), 'starfall.db')
+  }
     
     // Create directory if it doesn't exist (needed for Azure)
     const dbDir = dirname(dbPath)
