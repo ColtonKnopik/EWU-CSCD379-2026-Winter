@@ -1,75 +1,87 @@
 <template>
   <div class="game-container">
-    <GameHeader
-      :turn="gameState.turn"
-      :current-player="gameState.currentPlayer"
-      :player1-gold="goldState.player1.gold"
-      :player1-income="goldState.player1.income"
-      :player2-gold="goldState.player2.gold"
-      :player2-income="goldState.player2.income"
-      @end-turn="endTurn"
-    />
+    <!-- Loading Screen -->
+    <div v-if="gamePhase === 'loading'" class="loading-screen">
+      <div class="loading-content">
+        <div class="spinner"></div>
+        <h2 class="loading-title">Loading Map...</h2>
+        <p class="loading-text">Preparing the battlefield</p>
+      </div>
+    </div>
 
-    <div class="game-content">
-      <div class="game-sidebar">
-        <UnitInfo
-          :unit="gameState.selectedUnit"
+    <!-- Game Content (shown after loading) -->
+    <template v-else>
+      <GameHeader
+        :turn="gameState.turn"
+        :current-player="gameState.currentPlayer"
+        :player1-gold="goldState.player1.gold"
+        :player1-income="goldState.player1.income"
+        :player2-gold="goldState.player2.gold"
+        :player2-income="goldState.player2.income"
+        @end-turn="endTurn"
+      />
+
+      <div class="game-content">
+        <div class="game-sidebar">
+          <UnitInfo
+            :unit="gameState.selectedUnit"
+            :current-player="gameState.currentPlayer"
+            @deselect="deselectUnit"
+          />
+
+          <ActionMode
+            :mode="actionMode"
+            :has-moves="validMoves.length > 0"
+            :has-attacks="validAttacks.length > 0"
+          />
+        </div>
+
+        <GameBoard
+          ref="gameBoardRef"
+          :board-size="BOARD_SIZE"
+          :cols-per-row="COLS_PER_ROW"
+          :units="gameState.units"
+          :selected-unit-id="gameState.selectedUnit?.id || null"
+          :valid-moves="validMoves"
+          :valid-attacks="validAttacks"
+          :placement-zone="gamePhase === 'placement' ? { player: placementPlayer, cols: placementPlayer === 'player1' ? [0, 1, 2] : [5, 6, 7] } : null"
           :current-player="gameState.currentPlayer"
-          @deselect="deselectUnit"
-        />
-
-        <ActionMode
-          :mode="actionMode"
-          :has-moves="validMoves.length > 0"
-          :has-attacks="validAttacks.length > 0"
+          :get-cell-terrain="getCellTerrain"
+          :get-flag-owner="getFlagOwner"
+          :is-flag-contested="isFlagContested"
+          :explosions="explosions"
+          @cell-click="onCellClick"
         />
       </div>
 
-      <GameBoard
-        ref="gameBoardRef"
-        :board-size="BOARD_SIZE"
-        :cols-per-row="COLS_PER_ROW"
-        :units="gameState.units"
-        :selected-unit-id="gameState.selectedUnit?.id || null"
-        :valid-moves="validMoves"
-        :valid-attacks="validAttacks"
-        :placement-zone="gamePhase === 'placement' ? { player: placementPlayer, cols: placementPlayer === 'player1' ? [0, 1, 2] : [5, 6, 7] } : null"
-        :current-player="gameState.currentPlayer"
-        :get-cell-terrain="getCellTerrain"
-        :get-flag-owner="getFlagOwner"
-        :is-flag-contested="isFlagContested"
-        :explosions="explosions"
-        @cell-click="onCellClick"
+      <UnitShop
+        v-if="showShop && shopSpawnPoint"
+        :row="shopSpawnPoint.row"
+        :col="shopSpawnPoint.col"
+        :available-gold="gameState.currentPlayer === 'player1' ? goldState.player1.gold : goldState.player2.gold"
+        @close="closeShop"
+        @purchase="handlePurchase"
       />
-    </div>
 
-    <UnitShop
-      v-if="showShop && shopSpawnPoint"
-      :row="shopSpawnPoint.row"
-      :col="shopSpawnPoint.col"
-      :available-gold="gameState.currentPlayer === 'player1' ? goldState.player1.gold : goldState.player2.gold"
-      @close="closeShop"
-      @purchase="handlePurchase"
-    />
+      <CaptainPlacementIndicator
+        v-if="gamePhase === 'placement'"
+        :player="placementPlayer"
+      />
 
-    <CaptainPlacementIndicator
-      v-if="gamePhase === 'placement'"
-      :player="placementPlayer"
-    />
-
-    <VictoryScreen
-      v-if="gamePhase === 'victory' && winner"
-      :winner="winner"
-      :final-turn="gameState.turn"
-      :units-remaining="victoryStats.unitsRemaining"
-      :gold-collected="victoryStats.goldCollected"
-      @restart="restartGame"
-    />
+      <VictoryScreen
+        v-if="gamePhase === 'victory' && winner"
+        :winner="winner"
+        :final-turn="gameState.turn"
+        :units-remaining="victoryStats.unitsRemaining"
+        :gold-collected="victoryStats.goldCollected"
+        @restart="restartGame"
+      />
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed } from 'vue'
+import { reactive, ref, computed, onMounted } from 'vue'
 import GameHeader from '~~/components/GameHeader.vue'
 import UnitInfo from '~~/components/UnitInfo.vue'
 import ActionMode from '~~/components/ActionMode.vue'
@@ -97,17 +109,62 @@ import {
 const BOARD_SIZE = 8
 const COLS_PER_ROW = 8
 
+// Props for optional map loading
+interface Props {
+  mapId?: number
+}
+
+const props = defineProps<Props>()
+
 // Game phase tracking
-type GamePhase = 'placement' | 'playing' | 'victory'
-const gamePhase = ref<GamePhase>('placement')
+type GamePhase = 'loading' | 'placement' | 'playing' | 'victory'
+const gamePhase = ref<GamePhase>('loading')
 const placementPlayer = ref<Player>('player1')
 const showKingPlacement = ref(false) // Changed to false, no modal
 const winner = ref<Player | null>(null)
+const mapLoading = ref(true)
 
 // Terrain map
 const terrainMap = new Map<string, TerrainType>()
-baseMapData.forEach(([key, value]: [string, TerrainType]) => {
-  terrainMap.set(key, value)
+
+// Load map data
+async function loadMapData() {
+  mapLoading.value = true
+  
+  if (props.mapId) {
+    // Load map from database
+    try {
+      const response: any = await $fetch(`/api/maps/${props.mapId}`)
+      const mapData = response.data
+      
+      terrainMap.clear()
+      mapData.terrain_data.forEach(([key, value]: [string, TerrainType]) => {
+        terrainMap.set(key, value)
+      })
+      
+      console.log('✅ Map loaded from database:', mapData.name)
+    } catch (error) {
+      console.error('❌ Failed to load map, using default:', error)
+      loadDefaultMap()
+    }
+  } else {
+    // Load default map
+    loadDefaultMap()
+  }
+  
+  mapLoading.value = false
+  gamePhase.value = 'placement' // Now transition to placement phase
+}
+
+function loadDefaultMap() {
+  baseMapData.forEach(([key, value]: [string, TerrainType]) => {
+    terrainMap.set(key, value)
+  })
+}
+
+// Initialize map on mount
+onMounted(async () => {
+  await loadMapData()
 })
 
 // Game state
@@ -199,6 +256,13 @@ function onCellClick(row: number, col: number) {
   if (gamePhase.value === 'placement') {
     const clickedUnit = getUnitAt(row, col)
     if (clickedUnit) return // Can't place on existing unit
+    
+    // Check terrain - captains can only be placed on land
+    const terrain = getCellTerrain(row, col)
+    if (terrain !== 'land') {
+      console.log('Cannot place captain on', terrain)
+      return // Only allow placement on land
+    }
     
     // Check placement zones based on player
     const isValidPlacement = 
@@ -669,6 +733,47 @@ const victoryStats = computed(() => {
   flex-direction: column;
   background: #0a0a0a;
   min-height: 100vh;
+}
+
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+}
+
+.loading-content {
+  text-align: center;
+  padding: 40px;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 30px;
+  border: 4px solid #333;
+  border-top-color: #4caf50;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-title {
+  font-size: 32px;
+  font-weight: bold;
+  color: #fff;
+  margin: 0 0 15px 0;
+  text-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+}
+
+.loading-text {
+  font-size: 18px;
+  color: #999;
+  margin: 0;
 }
 
 .game-content {

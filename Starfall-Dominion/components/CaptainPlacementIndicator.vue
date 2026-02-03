@@ -17,6 +17,10 @@
         PLACE YOUR CAPTAIN
       </div>
       
+      <div class="placement-note rajdhani-font">
+        ⚠ Must be placed on LAND terrain
+      </div>
+      
       <div class="zone-info" :class="player">
         <div class="zone-label rajdhani-font">DEPLOYMENT ZONE</div>
         <div class="zone-description rajdhani-font">
@@ -204,8 +208,33 @@ defineProps<{
   padding: 12px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(96, 165, 250, 0.2);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   letter-spacing: 2px;
+}
+
+.placement-note {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fbbf24;
+  text-align: center;
+  padding: 8px 12px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 4px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  animation: warningPulse 2s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 0 rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+  }
 }
 
 .zone-info {

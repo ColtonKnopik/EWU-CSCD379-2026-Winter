@@ -1,7 +1,33 @@
 <template>
   <div class="editor-wrapper">
     <div class="toolbar">
-      <h2>Map Editor</h2>
+      <div class="header-section">
+        <h2>Map Editor</h2>
+        <NuxtLink to="/" class="back-button">← Back to Game</NuxtLink>
+      </div>
+
+      <!-- Map Info Section -->
+      <div class="map-info-section">
+        <div class="input-group">
+          <label>Map Name *</label>
+          <input
+            v-model="mapName"
+            type="text"
+            placeholder="My Awesome Map"
+            class="text-input"
+          />
+        </div>
+        <div class="input-group">
+          <label>Description (optional)</label>
+          <textarea
+            v-model="mapDescription"
+            placeholder="A challenging map with lava rivers..."
+            class="text-input"
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+      
       <div class="terrain-selector">
         <button
           v-for="terrain in terrains"
@@ -12,11 +38,17 @@
           {{ terrain.label }}
         </button>
       </div>
+      
       <div class="actions">
-        <button @click="saveMap" class="action-button">Save Map</button>
-        <button @click="loadMap" class="action-button">Load Map</button>
-        <button @click="clearMap" class="action-button">Clear Map</button>
-        <button @click="exportMap" class="action-button">Export JSON</button>
+        <button @click="saveMapToDatabase" class="action-button save">Save to Database</button>
+        <button @click="showLoadModal = true" class="action-button load">Load Map</button>
+        <button @click="clearMap" class="action-button clear">Clear Map</button>
+        <button @click="exportMap" class="action-button export">Export JSON</button>
+      </div>
+
+      <!-- Status message -->
+      <div v-if="statusMessage" :class="['status-message', statusType]">
+        {{ statusMessage }}
       </div>
     </div>
 
@@ -43,12 +75,42 @@
     <div class="info">
       <p>Click cells to paint with selected terrain type</p>
       <p>Current tool: <strong>{{ selectedTerrain }}</strong></p>
+      <p v-if="currentMapId" class="current-map">Editing: <strong>{{ mapName }}</strong></p>
+    </div>
+
+    <!-- Load Map Modal -->
+    <div v-if="showLoadModal" class="modal-overlay" @click.self="showLoadModal = false">
+      <div class="modal">
+        <h3>Load Map</h3>
+        <div v-if="loading" class="loading">Loading maps...</div>
+        <div v-else-if="savedMaps.length === 0" class="no-maps">
+          No saved maps found. Create your first map!
+        </div>
+        <div v-else class="maps-list">
+          <div
+            v-for="map in savedMaps"
+            :key="map.id"
+            class="map-item"
+          >
+            <div class="map-details">
+              <h4>{{ map.name }}</h4>
+              <p v-if="map.description">{{ map.description }}</p>
+              <small>Last updated: {{ formatDate(map.updated_at) }}</small>
+            </div>
+            <div class="map-actions">
+              <button @click="loadMapFromDatabase(map.id)" class="btn-load">Load</button>
+              <button @click="deleteMap(map.id)" class="btn-delete">Delete</button>
+            </div>
+          </div>
+        </div>
+        <button @click="showLoadModal = false" class="btn-close">Close</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import Cell, { type TerrainType } from '~~/components/Cell.vue'
 
 const BOARD_SIZE = 8
@@ -66,6 +128,14 @@ const terrains = [
 
 const selectedTerrain = ref<TerrainType>('land')
 const terrainMap = reactive(new Map<string, TerrainType>())
+const mapName = ref('')
+const mapDescription = ref('')
+const currentMapId = ref<number | null>(null)
+const statusMessage = ref('')
+const statusType = ref<'success' | 'error'>('success')
+const showLoadModal = ref(false)
+const savedMaps = ref<any[]>([])
+const loading = ref(false)
 
 // Initialize with land
 for (let row = 0; row < BOARD_SIZE; row++) {
@@ -75,6 +145,10 @@ for (let row = 0; row < BOARD_SIZE; row++) {
   }
 }
 
+onMounted(() => {
+  fetchMaps()
+})
+
 function getCellTerrain(row: number, col: number): TerrainType {
   const key = `${row}-${col}`
   return terrainMap.get(key) || 'void'
@@ -83,26 +157,101 @@ function getCellTerrain(row: number, col: number): TerrainType {
 function onCellClick(row: number, col: number) {
   const key = `${row}-${col}`
   terrainMap.set(key, selectedTerrain.value)
-  console.log(`Painted cell (${row}, ${col}) as ${selectedTerrain.value}`)
 }
 
-function saveMap() {
-  const mapData = Array.from(terrainMap.entries())
-  localStorage.setItem('customMap', JSON.stringify(mapData))
-  alert('Map saved!')
+async function saveMapToDatabase() {
+  if (!mapName.value.trim()) {
+    showStatus('Please enter a map name', 'error')
+    return
+  }
+
+  const terrainData = Array.from(terrainMap.entries())
+  
+  try {
+    if (currentMapId.value) {
+      // Update existing map
+      await $fetch(`/api/maps/${currentMapId.value}`, {
+        method: 'PUT',
+        body: {
+          name: mapName.value,
+          description: mapDescription.value,
+          terrain_data: terrainData
+        }
+      })
+      showStatus('Map updated successfully!', 'success')
+    } else {
+      // Create new map
+      const response: any = await $fetch('/api/maps', {
+        method: 'POST',
+        body: {
+          name: mapName.value,
+          description: mapDescription.value,
+          terrain_data: terrainData
+        }
+      })
+      currentMapId.value = response.data.id
+      showStatus('Map saved successfully!', 'success')
+    }
+    await fetchMaps()
+  } catch (error: any) {
+    showStatus(error.data?.message || 'Failed to save map', 'error')
+  }
 }
 
-function loadMap() {
-  const saved = localStorage.getItem('customMap')
-  if (saved) {
-    const mapData = JSON.parse(saved)
+async function fetchMaps() {
+  try {
+    const response: any = await $fetch('/api/maps')
+    savedMaps.value = response.data
+  } catch (error) {
+    console.error('Failed to fetch maps:', error)
+  }
+}
+
+async function loadMapFromDatabase(mapId: number) {
+  try {
+    loading.value = true
+    const response: any = await $fetch(`/api/maps/${mapId}`)
+    const mapData = response.data
+    
+    // Load terrain data
     terrainMap.clear()
-    mapData.forEach(([key, value]: [string, TerrainType]) => {
+    mapData.terrain_data.forEach(([key, value]: [string, TerrainType]) => {
       terrainMap.set(key, value)
     })
-    alert('Map loaded!')
-  } else {
-    alert('No saved map found!')
+    
+    // Load map info
+    mapName.value = mapData.name
+    mapDescription.value = mapData.description || ''
+    currentMapId.value = mapData.id
+    
+    showLoadModal.value = false
+    showStatus('Map loaded successfully!', 'success')
+  } catch (error: any) {
+    showStatus(error.data?.message || 'Failed to load map', 'error')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function deleteMap(mapId: number) {
+  if (!confirm('Are you sure you want to delete this map?')) return
+  
+  try {
+    await $fetch(`/api/maps/${mapId}`, {
+      method: 'DELETE'
+    })
+    
+    if (currentMapId.value === mapId) {
+      clearMap()
+      currentMapId.value = null
+      mapName.value = ''
+      mapDescription.value = ''
+    }
+    
+    await fetchMaps()
+    showStatus('Map deleted successfully!', 'success')
+  } catch (error: any) {
+    showStatus(error.data?.message || 'Failed to delete map', 'error')
   }
 }
 
@@ -114,11 +263,20 @@ function clearMap() {
         terrainMap.set(key, 'land')
       }
     }
+    mapName.value = ''
+    mapDescription.value = ''
+    currentMapId.value = null
   }
 }
 
 function exportMap() {
-  const mapData = Array.from(terrainMap.entries())
+  const terrainData = Array.from(terrainMap.entries())
+  const mapData = {
+    name: mapName.value || 'Untitled Map',
+    description: mapDescription.value,
+    terrain_data: terrainData
+  }
+  
   const json = JSON.stringify(mapData, null, 2)
   
   // Create download link
@@ -126,9 +284,23 @@ function exportMap() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'map-data.json'
+  a.download = `${mapName.value || 'map'}-data.json`
   a.click()
   URL.revokeObjectURL(url)
+  
+  showStatus('Map exported!', 'success')
+}
+
+function showStatus(message: string, type: 'success' | 'error') {
+  statusMessage.value = message
+  statusType.value = type
+  setTimeout(() => {
+    statusMessage.value = ''
+  }, 3000)
+}
+
+function formatDate(dateString: string) {
+  return new Date(dateString).toLocaleDateString() + ' ' + new Date(dateString).toLocaleTimeString()
 }
 </script>
 
@@ -151,9 +323,68 @@ function exportMap() {
   gap: 15px;
 }
 
+.header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .toolbar h2 {
   margin: 0;
   color: #fff;
+}
+
+.back-button {
+  padding: 8px 16px;
+  background: #333;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.back-button:hover {
+  background: #444;
+}
+
+.map-info-section {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.input-group {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.input-group label {
+  color: #aaa;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.text-input {
+  padding: 10px;
+  background: #2a2a2a;
+  border: 2px solid #444;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.text-input:focus {
+  outline: none;
+  border-color: #666;
+}
+
+.text-input::placeholder {
+  color: #666;
 }
 
 .terrain-selector {
@@ -183,34 +414,13 @@ function exportMap() {
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
-.terrain-button.water {
-  background: #4a90e2;
-}
-
-.terrain-button.land {
-  background: #7cb342;
-}
-
-.terrain-button.lava {
-  background: #e74c3c;
-}
-
-.terrain-button.void {
-  background: #2c3e50;
-}
-
-.terrain-button.mountain {
-  background: #8b7355;
-}
-
-.terrain-button.spawn {
-  background: #9c27b0;
-}
-
-.terrain-button.flag {
-  background: #ffd700;
-  color: #333;
-}
+.terrain-button.water { background: #4a90e2; }
+.terrain-button.land { background: #7cb342; }
+.terrain-button.lava { background: #e74c3c; }
+.terrain-button.void { background: #2c3e50; }
+.terrain-button.mountain { background: #8b7355; }
+.terrain-button.spawn { background: #9c27b0; }
+.terrain-button.flag { background: #ffd700; color: #333; }
 
 .actions {
   display: flex;
@@ -219,18 +429,52 @@ function exportMap() {
 }
 
 .action-button {
-  padding: 10px 20px;
-  background: #555;
+  padding: 12px 20px;
   border: none;
   border-radius: 6px;
   color: white;
   cursor: pointer;
   font-weight: bold;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  font-size: 14px;
 }
 
 .action-button:hover {
-  background: #666;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.action-button.save { background: #4caf50; }
+.action-button.load { background: #2196f3; }
+.action-button.clear { background: #f44336; }
+.action-button.export { background: #ff9800; }
+
+.status-message {
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  animation: slideIn 0.3s ease-out;
+}
+
+.status-message.success {
+  background: #4caf50;
+  color: white;
+}
+
+.status-message.error {
+  background: #f44336;
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .board-wrapper {
@@ -249,12 +493,12 @@ function exportMap() {
 
 .hex-row {
   display: flex;
-  height: 100px; /* Full hexagon height */
-  margin-top: -25px; /* Overlap by 1/4 height for perfect fit */
+  height: 100px;
+  margin-top: -25px;
 }
 
 .hex-row:first-child {
-  margin-top: 0; /* No overlap for first row */
+  margin-top: 0;
 }
 
 .hex-row.offset {
@@ -264,7 +508,7 @@ function exportMap() {
 .hex-row > * {
   width: 86.6px;
   flex-shrink: 0;
-  margin-left: -1px; /* Tiny overlap to eliminate gaps */
+  margin-left: -1px;
 }
 
 .hex-row > *:first-child {
@@ -283,5 +527,162 @@ function exportMap() {
 .info strong {
   color: #fff;
   text-transform: capitalize;
+}
+
+.current-map {
+  color: #4caf50 !important;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal h3 {
+  margin: 0 0 20px 0;
+  color: #fff;
+  font-size: 24px;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.no-maps {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}
+
+.maps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.map-item {
+  background: #2a2a2a;
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  transition: background 0.2s;
+}
+
+.map-item:hover {
+  background: #333;
+}
+
+.map-details {
+  flex: 1;
+}
+
+.map-details h4 {
+  margin: 0 0 5px 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+.map-details p {
+  margin: 0 0 5px 0;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.map-details small {
+  color: #666;
+  font-size: 12px;
+}
+
+.map-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-load, .btn-delete {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btn-load {
+  background: #4caf50;
+  color: white;
+}
+
+.btn-load:hover {
+  background: #45a049;
+}
+
+.btn-delete {
+  background: #f44336;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #da190b;
+}
+
+.btn-close {
+  width: 100%;
+  padding: 12px;
+  background: #555;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  transition: background 0.2s;
+}
+
+.btn-close:hover {
+  background: #666;
 }
 </style>

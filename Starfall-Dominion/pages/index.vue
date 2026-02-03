@@ -1,15 +1,20 @@
 <template>
   <div>
     <StarfallMenu 
-      v-if="!showMorePage"
+      v-if="!showMorePage && !showMapSelector"
       @online-play="navigateToOnlinePlay"
-      @local-play="navigateToLocalPlay"  
+      @local-play="showMapSelectionDialog"  
       @map-editor="openMapEditor"
       @more="openMoreMenu"
     />
     <MorePage 
-      v-else
+      v-else-if="showMorePage"
       @back="closeMorePage"
+    />
+    <MapSelector
+      v-else-if="showMapSelector"
+      @close="showMapSelector = false"
+      @select="playWithCustomMap"
     />
   </div>
 </template>
@@ -18,17 +23,24 @@
 import { ref } from 'vue'
 import StarfallMenu from '~/components/StarfallMenu.vue'
 import MorePage from '~/components/MorePage.vue'
+import MapSelector from '~/components/MapSelector.vue'
 
 const showMorePage = ref(false)
+const showMapSelector = ref(false)
 
 const navigateToOnlinePlay = (): void => {
     console.log('Navigating to online play...');
     navigateTo('/online');
 };
 
-const navigateToLocalPlay = (): void => {
-    console.log('Navigating to local play...');
-    navigateTo('/game');
+const showMapSelectionDialog = (): void => {
+    console.log('Opening map selection...');
+    showMapSelector.value = true;
+};
+
+const playWithCustomMap = (mapId: number): void => {
+    console.log('Playing with map:', mapId);
+    navigateTo(`/game?mapId=${mapId}`);
 };
 
 const openMapEditor = (): void => {
