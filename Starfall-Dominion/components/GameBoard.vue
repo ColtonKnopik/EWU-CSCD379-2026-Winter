@@ -1,5 +1,11 @@
 <template>
 <div class="board-wrapper">
+  <!-- Corner decorations -->
+  <div class="corner tl"></div>
+  <div class="corner tr"></div>
+  <div class="corner bl"></div>
+  <div class="corner br"></div>
+
   <!-- Dark overlay when explosion is active -->
   <div 
     class="explosion-darkening" 
@@ -293,6 +299,8 @@ function handleCellClick(row: number, col: number) {
   if (isAnyUnitAnimating.value) {
     return // Block all clicks during animations
   }
+  // Prevent any default scroll behavior
+  event?.preventDefault?.()
   emit('cellClick', row, col)
 }
 
@@ -323,190 +331,5 @@ function getCellHighlight(row: number, col: number): string {
 </script>
 
 <style scoped>
-.board-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  flex: 1;
-  position: relative;
-}
-
-/* Darkening overlay for explosions */
-.explosion-darkening {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.3s ease-in-out;
-  z-index: 50;
-  border-radius: 8px;
-}
-
-.explosion-darkening.active {
-  opacity: 1;
-  animation: explosionPulse 1.2s ease-out;
-}
-
-@keyframes explosionPulse {
-  0% {
-    background: radial-gradient(circle at center, rgba(255, 100, 0, 0.3) 0%, rgba(0, 0, 0, 0.8) 50%);
-  }
-  30% {
-    background: radial-gradient(circle at center, rgba(255, 100, 0, 0.1) 0%, rgba(0, 0, 0, 0.85) 50%);
-  }
-  100% {
-    background: radial-gradient(circle at center, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.8) 100%);
-  }
-}
-
-.board-container {
-  position: relative;
-  transition: transform 0.05s ease;
-}
-
-.board-container.shaking {
-  animation: shake 0.5s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% {
-    transform: translate(0, 0);
-  }
-  10% {
-    transform: translate(-3px, -2px);
-  }
-  20% {
-    transform: translate(3px, 2px);
-  }
-  30% {
-    transform: translate(-3px, 2px);
-  }
-  40% {
-    transform: translate(3px, -2px);
-  }
-  50% {
-    transform: translate(-3px, 0);
-  }
-  60% {
-    transform: translate(3px, 0);
-  }
-  70% {
-    transform: translate(-2px, 1px);
-  }
-  80% {
-    transform: translate(2px, -1px);
-  }
-  90% {
-    transform: translate(-1px, 0);
-  }
-}
-
-.board {
-  display: flex;
-  flex-direction: column;
-}
-
-.hex-row {
-  display: flex;
-  height: 100px;
-  margin-top: -25px;
-}
-
-.hex-row:first-child {
-  margin-top: 0;
-}
-
-.hex-row.offset {
-  margin-left: 43.3px;
-}
-
-.cell-wrapper {
-  width: 86.6px;
-  height: 100px;
-  flex-shrink: 0;
-  margin-left: -1px;
-  position: relative;
-}
-
-.cell-wrapper:first-child {
-  margin-left: 0;
-}
-
-.cell-wrapper.interaction-locked {
-  pointer-events: none;
-}
-
-.animation-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 100;
-}
-
-.animation-layer.active {
-  pointer-events: all;
-}
-
-.animation-layer > * {
-  pointer-events: none;
-}
-
-:deep(.highlight-move .hexagon-shape) {
-  stroke: #27ae60;
-  stroke-width: 4;
-  filter: brightness(1.2);
-}
-
-:deep(.highlight-attack .hexagon-shape) {
-  stroke: #e74c3c;
-  stroke-width: 4;
-  filter: brightness(1.2);
-}
-
-:deep(.highlight-placement-p1 .hexagon-shape) {
-  stroke: #3b82f6;
-  stroke-width: 3;
-  filter: brightness(1.3);
-  animation: placementPulse 2s ease-in-out infinite;
-}
-
-:deep(.highlight-placement-p2 .hexagon-shape) {
-  stroke: #a855f7;
-  stroke-width: 3;
-  filter: brightness(1.3);
-  animation: placementPulse 2s ease-in-out infinite;
-}
-
-:deep(.highlight-unit-p1 .hexagon-shape) {
-  stroke: #3b82f6;
-  stroke-width: 3;
-  filter: brightness(1.1);
-}
-
-:deep(.highlight-unit-p2 .hexagon-shape) {
-  stroke: #ef4444;
-  stroke-width: 3;
-  filter: brightness(1.1);
-}
-
-@keyframes placementPulse {
-  0%, 100% {
-    opacity: 0.6;
-    stroke-width: 3;
-  }
-  50% {
-    opacity: 1;
-    stroke-width: 4;
-  }
-}
+@import '~/assets/css/gameboard.css';
 </style>

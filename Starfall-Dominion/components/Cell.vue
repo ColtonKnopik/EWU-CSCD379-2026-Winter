@@ -1,8 +1,8 @@
 <template>
-  <div 
-    class="cell-container"
-    @click="$emit('click')"
-  >
+<div 
+  class="cell-container"
+  @click.prevent="$emit('click')"
+>
     <svg class="hexagon" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
       <polygon 
         :points="hexagonPoints"

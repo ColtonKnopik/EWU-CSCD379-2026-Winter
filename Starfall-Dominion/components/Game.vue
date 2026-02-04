@@ -1,58 +1,92 @@
 <template>
-  <div class="game-container">
-    <!-- Loading Screen -->
-    <div v-if="gamePhase === 'loading'" class="loading-screen">
-      <div class="loading-content">
-        <div class="spinner"></div>
-        <h2 class="loading-title">Loading Map...</h2>
-        <p class="loading-text">Preparing the battlefield</p>
-      </div>
-    </div>
+<div class="game-container">
+  <!-- Boot Sequence -->
+  <GameBootSequence
+    v-if="showBootSequence"
+    @show-board="revealBoard"
+    @show-header="revealHeader"
+    @show-sidebars="revealSidebars"
+    @show-footer="revealFooter"
+    @complete="bootComplete"
+  />
 
-    <!-- Game Content (shown after loading) -->
-    <template v-else>
-      <GameHeader
-        :turn="gameState.turn"
-        :current-player="gameState.currentPlayer"
-        :player1-gold="goldState.player1.gold"
-        :player1-income="goldState.player1.income"
-        :player2-gold="goldState.player2.gold"
-        :player2-income="goldState.player2.income"
-        @end-turn="endTurn"
+  <!-- Loading Screen -->
+  <div v-if="gamePhase === 'loading'" class="loading-screen">
+    <div class="loading-content">
+      <div class="spinner"></div>
+      <h2 class="loading-title">Loading Map...</h2>
+      <p class="loading-text">Preparing the battlefield</p>
+    </div>
+  </div>
+
+  <!-- Game Content (shown after loading) -->
+  <template v-else>
+    <GameHeader
+      v-show="headerVisible"
+      :class="{ 'element-reveal': headerRevealing }"
+      :turn="gameState.turn"
+      :current-player="gameState.currentPlayer"
+      :player1-gold="goldState.player1.gold"
+      :player1-income="goldState.player1.income"
+      :player2-gold="goldState.player2.gold"
+      :player2-income="goldState.player2.income"
+      @end-turn="endTurn"
+    />
+
+    <div class="game-content">
+      <!-- Left Sidebar -->
+      <LeftSidebar
+        v-show="sidebarsVisible"
+        :class="{ 'element-reveal': sidebarsRevealing }"
+        :recent-actions="recentActions"
       />
 
-      <div class="game-content">
-        <div class="game-sidebar">
-          <UnitInfo
-            :unit="gameState.selectedUnit"
-            :current-player="gameState.currentPlayer"
-            @deselect="deselectUnit"
-          />
+      <!-- Game Board -->
+      <GameBoard
+        v-show="boardVisible"
+        :class="{ 'element-reveal': boardRevealing }"
+        ref="gameBoardRef"
+        :board-size="BOARD_SIZE"
+        :cols-per-row="COLS_PER_ROW"
+        :units="gameState.units"
+        :selected-unit-id="gameState.selectedUnit?.id || null"
+        :valid-moves="validMoves"
+        :valid-attacks="validAttacks"
+        :placement-zone="gamePhase === 'placement' ? { player: placementPlayer, cols: placementPlayer === 'player1' ? [0, 1, 2] : [5, 6, 7] } : null"
+        :current-player="gameState.currentPlayer"
+        :get-cell-terrain="getCellTerrain"
+        :get-flag-owner="getFlagOwner"
+        :is-flag-contested="isFlagContested"
+        :explosions="explosions"
+        @cell-click="onCellClick"
+      />
 
-          <ActionMode
-            :mode="actionMode"
-            :has-moves="validMoves.length > 0"
-            :has-attacks="validAttacks.length > 0"
-          />
-        </div>
+      <!-- Right Sidebar -->
+      <RightSidebar
+        v-show="sidebarsVisible"
+        :class="{ 'element-reveal': sidebarsRevealing }"
+        :sound-enabled="soundEnabled"
+        :animation-speed="animationSpeed"
+        :grid-enabled="gridEnabled"
+        :game-mode="'LOCAL 1v1'"
+        :map-name="'Default Map'"
+        @forfeit="handleForfeit"
+        @menu="handleReturnToMenu"
+        @toggle-sound="toggleSound"
+        @increase-speed="increaseAnimationSpeed"
+        @decrease-speed="decreaseAnimationSpeed"
+        @toggle-grid="toggleGrid"
+      />
+    </div>
 
-        <GameBoard
-          ref="gameBoardRef"
-          :board-size="BOARD_SIZE"
-          :cols-per-row="COLS_PER_ROW"
-          :units="gameState.units"
-          :selected-unit-id="gameState.selectedUnit?.id || null"
-          :valid-moves="validMoves"
-          :valid-attacks="validAttacks"
-          :placement-zone="gamePhase === 'placement' ? { player: placementPlayer, cols: placementPlayer === 'player1' ? [0, 1, 2] : [5, 6, 7] } : null"
-          :current-player="gameState.currentPlayer"
-          :get-cell-terrain="getCellTerrain"
-          :get-flag-owner="getFlagOwner"
-          :is-flag-contested="isFlagContested"
-          :explosions="explosions"
-          @cell-click="onCellClick"
-        />
-      </div>
+    <!-- Unit Info Footer -->
+    <UnitInfo
+      v-show="footerVisible"
+      :class="{ 'element-reveal': footerRevealing }"
+      :unit="gameState.selectedUnit"
+      :current-player="gameState.currentPlayer"
+      @deselect="deselectUnit"
+    />
 
       <UnitShop
         v-if="showShop && shopSpawnPoint"
@@ -64,8 +98,9 @@
       />
 
       <CaptainPlacementIndicator
-        v-if="gamePhase === 'placement'"
+        v-if="gamePhase === 'placement' && showKingPlacement"
         :player="placementPlayer"
+        @dismiss="dismissPlacementModal"
       />
 
       <VictoryScreen
@@ -89,6 +124,9 @@ import GameBoard from '~~/components/GameBoard.vue'
 import UnitShop from '~~/components/UnitShop.vue'
 import CaptainPlacementIndicator from '~~/components/CaptainPlacementIndicator.vue'
 import VictoryScreen from '~~/components/VictoryScreen.vue'
+import LeftSidebar from '~~/components/LeftSidebar.vue'
+import RightSidebar from '~~/components/RightSidebar.vue'
+import GameBootSequence from '~~/components/GameBootSequence.vue'
 import type { TerrainType } from '~~/components/Cell.vue'
 import baseMapData from '~~/data/baseMap.json'
 import { getUnitDefinition, createUnit } from '~~/data/unitDefinitions'
@@ -120,9 +158,26 @@ const props = defineProps<Props>()
 type GamePhase = 'loading' | 'placement' | 'playing' | 'victory'
 const gamePhase = ref<GamePhase>('loading')
 const placementPlayer = ref<Player>('player1')
-const showKingPlacement = ref(false) // Changed to false, no modal
+const showKingPlacement = ref(false) // Don't show until boot complete
 const winner = ref<Player | null>(null)
 const mapLoading = ref(true)
+
+// Sidebar state
+const soundEnabled = ref(true)
+const animationSpeed = ref(1)
+const gridEnabled = ref(false)
+const recentActions = ref<Array<{ turn: number; text: string }>>([])
+
+// Boot sequence state
+const showBootSequence = ref(true)
+const boardVisible = ref(false)
+const boardRevealing = ref(false)
+const headerVisible = ref(false)
+const headerRevealing = ref(false)
+const sidebarsVisible = ref(false)
+const sidebarsRevealing = ref(false)
+const footerVisible = ref(false)
+const footerRevealing = ref(false)
 
 // Terrain map
 const terrainMap = new Map<string, TerrainType>()
@@ -251,7 +306,17 @@ function getUnitAt(row: number, col: number): UnitType | undefined {
   return gameState.units.find(u => u.row === row && u.col === col)
 }
 
+// Dismiss placement modal
+function dismissPlacementModal() {
+  showKingPlacement.value = false
+}
+
 function onCellClick(row: number, col: number) {
+  // Don't allow clicks if modal is showing
+  if (gamePhase.value === 'placement' && showKingPlacement.value) {
+    return
+  }
+  
   // Handle Captain placement phase
   if (gamePhase.value === 'placement') {
     const clickedUnit = getUnitAt(row, col)
@@ -286,6 +351,7 @@ function onCellClick(row: number, col: number) {
     // Move to next player or start game
     if (placementPlayer.value === 'player1') {
       placementPlayer.value = 'player2'
+      showKingPlacement.value = true // Show modal for player 2
     } else {
       gamePhase.value = 'playing'
       // Add starting units for both players
@@ -726,6 +792,80 @@ const victoryStats = computed(() => {
     goldCollected: winnerGold
   }
 })
+
+// Sidebar action handlers
+function handleForfeit() {
+  if (confirm('Are you sure you want to forfeit the match?')) {
+    winner.value = gameState.currentPlayer === 'player1' ? 'player2' : 'player1'
+    gamePhase.value = 'victory'
+  }
+}
+
+function handleReturnToMenu() {
+  if (confirm('Return to main menu? Current game will be lost.')) {
+    navigateTo('/')
+  }
+}
+
+function toggleSound() {
+  soundEnabled.value = !soundEnabled.value
+}
+
+function increaseAnimationSpeed() {
+  if (animationSpeed.value < 2) {
+    animationSpeed.value = Math.min(2, animationSpeed.value + 0.25)
+  }
+}
+
+function decreaseAnimationSpeed() {
+  if (animationSpeed.value > 0.5) {
+    animationSpeed.value = Math.max(0.5, animationSpeed.value - 0.25)
+  }
+}
+
+function toggleGrid() {
+  gridEnabled.value = !gridEnabled.value
+}
+
+function addAction(text: string) {
+  recentActions.value.unshift({
+    turn: gameState.turn,
+    text
+  })
+  // Keep only last 5 actions
+  if (recentActions.value.length > 5) {
+    recentActions.value = recentActions.value.slice(0, 5)
+  }
+}
+
+// Boot sequence reveal functions
+function revealBoard() {
+  boardVisible.value = true
+  boardRevealing.value = true
+}
+
+function revealHeader() {
+  headerVisible.value = true
+  headerRevealing.value = true
+}
+
+function revealSidebars() {
+  sidebarsVisible.value = true
+  sidebarsRevealing.value = true
+}
+
+function revealFooter() {
+  footerVisible.value = true
+  footerRevealing.value = true
+}
+
+function bootComplete() {
+  showBootSequence.value = false
+  // Show placement modal after boot sequence completes
+  if (gamePhase.value === 'placement') {
+    showKingPlacement.value = true
+  }
+}
 </script>
 
 <style scoped>
@@ -733,7 +873,8 @@ const victoryStats = computed(() => {
   display: flex;
   flex-direction: column;
   background: #0a0a0a;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .loading-screen {
@@ -779,15 +920,32 @@ const victoryStats = computed(() => {
 
 .game-content {
   display: flex;
-  gap: 20px;
-  padding: 20px;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px;
+  gap: 15px;
   flex: 1;
+  overflow: hidden;
+  min-height: 0;
 }
 
-.game-sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  min-width: 250px;
+/* Element Reveal Animation */
+.element-reveal {
+  animation: elementReveal 0.8s ease-out forwards;
 }
+
+@keyframes elementReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    filter: blur(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Remove old sidebar styles */
 </style>
