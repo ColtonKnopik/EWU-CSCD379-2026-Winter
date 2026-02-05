@@ -10,7 +10,10 @@
     @click="$emit('click')"
   >
     <template #icon>
-      <img :src="daftIcon" alt="Daft" class="unit-icon" />
+      <div 
+        class="daft-sprite" 
+        :class="[player, { attacking: isAttacking }]"
+      ></div>
     </template>
   </Unit>
 </template>
@@ -27,18 +30,18 @@ interface Props {
   actionsRemaining: number
   isSelected?: boolean
   currentPlayer?: Player
+  isAttacking?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
-  currentPlayer: 'player1'
+  currentPlayer: 'player1',
+  isAttacking: false
 })
 
 defineEmits<{
   click: []
 }>()
-
-const daftIcon = new URL('~~/data/sprites/Daft.png', import.meta.url).href
 
 // Setup unit-specific sounds using unit type
 const sounds = useUnitSounds('daft')
@@ -51,3 +54,39 @@ defineExpose({
   playDeathSound: sounds.playDeathSound
 })
 </script>
+
+<style scoped>
+.daft-sprite {
+  width: 95%;
+  height: 95%;
+  background-image: url('~~/data/sprites/Daft.png');
+  background-size: 200% 200%; /* 2x2 grid: 2 columns, 2 rows */
+  background-repeat: no-repeat;
+  background-position: 0% 0%;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  transition: filter 0.2s ease;
+  animation: daft-breathe 2.5s steps(2) infinite;
+}
+
+.daft-sprite.player1 {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
+          drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
+}
+
+.daft-sprite.player2 {
+  transform: scaleX(-1);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
+          drop-shadow(0 0 10px rgba(220, 38, 38, 0.3));
+}
+
+/* Attack animation state - show bottom-right frame */
+.daft-sprite.attacking {
+  background-position: 100% 0%; /* Top-right: Attack frame */
+  animation: none; /* Override idle animation */
+}
+
+@keyframes daft-breathe {
+  0% { background-position: 0% 0%; }    /* Top-left: Idle frame 1 */
+  100% { background-position: 0% 200%; } /* Bottom-Left: Idle frame 2 */
+}
+</style>

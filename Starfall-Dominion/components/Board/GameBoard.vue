@@ -112,6 +112,7 @@
                 :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
                 :is-selected="selectedUnitId === getUnitAt(row - 1, col - 1)!.id"
                 :current-player="currentPlayer"
+                :is-attacking="isUnitAttacking(row - 1, col - 1)"
                 @click="handleCellClick(row - 1, col - 1)"
               />
               <Punk
@@ -179,6 +180,7 @@
           :actions-remaining="anim.unit.actionsRemaining"
           :is-selected="selectedUnitId === anim.unitId"
           :current-player="currentPlayer"
+          :is-attacking="isUnitAttacking(anim.unit.row, anim.unit.col)"
           :style="getAnimationStyle(anim)"
         />
         <Punk
