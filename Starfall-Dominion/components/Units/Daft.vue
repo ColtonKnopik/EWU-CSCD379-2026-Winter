@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import Unit from '~~/components/Unit.vue'
+import Unit from '~~/components/Units/Unit.vue'
 import { useUnitSounds } from '~~/composables/useUnitSounds'
 import { type Player } from '~~/types/gameTypes'
 
@@ -38,7 +38,7 @@ defineEmits<{
   click: []
 }>()
 
-const daftIcon = new URL('../../data/sprites/Daft.png', import.meta.url).href
+const daftIcon = new URL('~~/data/sprites/Daft.png', import.meta.url).href
 
 // Setup unit-specific sounds using unit type
 const sounds = useUnitSounds('daft')

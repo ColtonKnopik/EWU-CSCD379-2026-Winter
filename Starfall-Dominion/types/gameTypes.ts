@@ -1,4 +1,4 @@
-import { type TerrainType } from '~~/components/Cell.vue'
+import { type TerrainType } from '~~/components/board/Cell.vue'
 
 export type Player = 'player1' | 'player2'
 export type UnitType = 'captain' | 'berserker' | 'marine' | 'daft' | 'punk'

@@ -234,7 +234,7 @@ const selectedUnit = ref<(UnitDefinition & { image: string }) | null>(null)
 const availableUnits = computed(() => {
   return getPurchasableUnits().map(unit => ({
     ...unit,
-    image: new URL(`../data/sprites/${unit.spritePath}`, import.meta.url).href
+    image: new URL(`../../data/sprites/${unit.spritePath}`, import.meta.url).href
   }))
 })
 

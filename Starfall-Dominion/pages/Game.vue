@@ -4,7 +4,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import Game from '~/components/Game.vue'
+import Game from '~/components/Game/Game.vue'
 
 const route = useRoute()
 

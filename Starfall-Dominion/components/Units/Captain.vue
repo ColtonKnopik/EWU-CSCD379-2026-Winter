@@ -16,7 +16,7 @@
 </template>
 
 <script setup lang="ts">
-import Unit from '~~/components/Unit.vue'
+import Unit from '~~/components/Units/Unit.vue'
 import { useUnitSounds } from '~~/composables/useUnitSounds'
 import { type Player } from '~~/types/gameTypes'
 
