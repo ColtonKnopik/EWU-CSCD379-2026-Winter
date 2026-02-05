@@ -129,7 +129,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import Cell, { type TerrainType } from '~~/components/board/Cell.vue'
+import Cell, { type TerrainType } from '~~/components/Board/Cell.vue'
 import MapPreview from '~~/components/MapPreview.vue'
 
 const BOARD_SIZE = 8
