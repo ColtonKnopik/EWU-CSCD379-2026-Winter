@@ -100,6 +100,7 @@
                 :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
                 :is-selected="selectedUnitId === getUnitAt(row - 1, col - 1)!.id"
                 :current-player="currentPlayer"
+                :is-attacking="isUnitAttacking(row - 1, col - 1)"
                 @click="handleCellClick(row - 1, col - 1)"
               />
               <Daft
@@ -165,6 +166,7 @@
           :actions-remaining="anim.unit.actionsRemaining"
           :is-selected="selectedUnitId === anim.unitId"
           :current-player="currentPlayer"
+          :is-attacking="isUnitAttacking(anim.unit.row, anim.unit.col)"
           :style="getAnimationStyle(anim)"
         />
         <Daft
@@ -289,6 +291,13 @@ function getExplosionsAt(row: number, col: number) {
 
 // Attack animation system
 const { activeAnimations, getAnimationsAt, triggerAttackAnimation } = useAttackAnimations()
+
+// Check if a unit at specific position is currently attacking
+function isUnitAttacking(row: number, col: number): boolean {
+  return activeAnimations.value.some(
+    anim => anim.attackerRow === row && anim.attackerCol === col
+  )
+}
 
 defineExpose({
   playUnitSpawnSound,

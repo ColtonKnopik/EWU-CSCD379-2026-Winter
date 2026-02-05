@@ -52,8 +52,8 @@ defineExpose({
 
 <style scoped>
 .berserker-sprite {
-  width: 85%;
-  height: 85%;
+  width: 95%;
+  height: 95%;
   background-image: url('../../data/sprites/Berserker.png');
   background-size: 100% 200%; /* 2 frames vertically = 200% height */
   background-repeat: no-repeat;
