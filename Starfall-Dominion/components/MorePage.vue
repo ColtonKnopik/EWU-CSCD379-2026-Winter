@@ -115,7 +115,7 @@
 
               <div class="version-info">
                 <span class="version-label">CURRENT VERSION</span>
-                <span class="version-number">1.0.0</span>
+                <span class="version-number">{{ APP_VERSION }}</span>
               </div>
             </div>
           </div>
@@ -335,6 +335,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { APP_VERSION } from '~/config/app';
 
 const emit = defineEmits<{
   back: []
