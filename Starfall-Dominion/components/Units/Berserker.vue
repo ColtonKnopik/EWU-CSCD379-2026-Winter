@@ -10,7 +10,7 @@
     @click="$emit('click')"
   >
     <template #icon>
-      <img :src="berserkerIcon" alt="Berserker" class="unit-icon" />
+      <div class="berserker-sprite" :class="player"></div>
     </template>
   </Unit>
 </template>
@@ -38,8 +38,6 @@ defineEmits<{
   click: []
 }>()
 
-const berserkerIcon = new URL('../../data/sprites/Berserker.png', import.meta.url).href
-
 // Setup unit-specific sounds using unit type
 const sounds = useUnitSounds('berserker')
 
@@ -51,3 +49,33 @@ defineExpose({
   playDeathSound: sounds.playDeathSound
 })
 </script>
+
+<style scoped>
+.berserker-sprite {
+  width: 85%;
+  height: 85%;
+  background-image: url('../../data/sprites/Berserker.png');
+  background-size: 100% 200%; /* 2 frames vertically = 200% height */
+  background-repeat: no-repeat;
+  background-position: 0 0%;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
+  transition: filter 0.2s ease;
+  animation: berserker-breathe 2.5s steps(2) infinite;
+}
+
+.berserker-sprite.player1 {
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
+          drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
+}
+
+.berserker-sprite.player2 {
+  transform: scaleX(-1);
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
+          drop-shadow(0 0 10px rgba(220, 38, 38, 0.3));
+}
+
+@keyframes berserker-breathe {
+  0% { background-position: 0 0%; }
+  100% { background-position: 0 200%; }
+}
+</style>
