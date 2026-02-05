@@ -116,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, onMounted } from 'vue'
+import { reactive, ref, computed, onMounted, nextTick } from 'vue'
 import GameHeader from '~~/components/GameHeader.vue'
 import UnitInfo from '~~/components/UnitInfo.vue'
 import ActionMode from '~~/components/ActionMode.vue'
@@ -347,6 +347,13 @@ function onCellClick(row: number, col: number) {
     )
     
     gameState.units.push(captain)
+    
+    // Play captain spawn sound
+    nextTick(() => {
+      if (gameBoardRef.value) {
+        gameBoardRef.value.playUnitSpawnSound(captain.id)
+      }
+    })
     
     // Move to next player or start game
     if (placementPlayer.value === 'player1') {
@@ -749,6 +756,13 @@ function handlePurchase(unitType: UnitType, cost: number) {
   )
   
   gameState.units.push(newUnit)
+  
+  // Play spawn sound
+  nextTick(() => {
+    if (gameBoardRef.value) {
+      gameBoardRef.value.playUnitSpawnSound(newUnit.id)
+    }
+  })
   
   // Close shop
   showShop.value = false

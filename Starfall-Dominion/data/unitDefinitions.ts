@@ -22,6 +22,7 @@ export interface UnitDefinition {
   
   // Sound Paths
   sounds: {
+    spawn: string
     attack: string
     hurt: string
     death: string
@@ -47,6 +48,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'melee-slash',
     attackAnimationDuration: 500,
     sounds: {
+      spawn: '/audio/units/captain/spawn.m4a',
       attack: '/audio/units/captain/attack.m4a',
       hurt: '/audio/units/captain/hurt.mp3',
       death: '/audio/units/captain/death.m4a'
@@ -68,6 +70,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'melee-slash',
     attackAnimationDuration: 500,
     sounds: {
+      spawn: '/audio/units/berserker/spawn.mp3',
       attack: '/audio/units/berserker/attack.mp3',
       hurt: '/audio/units/berserker/hurt.mp3',
       death: '/audio/units/berserker/death.mp3'
@@ -88,6 +91,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'ranged-shot',
     attackAnimationDuration: 600,
     sounds: {
+      spawn: '/audio/units/marine/spawn.mp3',
       attack: '/audio/units/marine/attack.mp3',
       hurt: '/audio/units/marine/hurt.mp3',
       death: '/audio/units/marine/death.mp3'
@@ -108,6 +112,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'charged-blast',
     attackAnimationDuration: 3000, // 2s charge + 1s blast
     sounds: {
+      spawn: '/audio/units/daft/spawn.mp3',
       attack: '/audio/units/daft/attack.m4a', // Includes charge sound
       hurt: '/audio/units/daft/hurt.mp3',
       death: '/audio/units/daft/death.m4a'
@@ -129,6 +134,7 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'charged-blast',
     attackAnimationDuration: 3000, // 2s charge + 1s blast
     sounds: {
+      spawn: '/audio/units/punk/spawn.mp3',
       attack: '/audio/units/punk/attack.m4a', // Includes charge sound
       hurt: '/audio/units/punk/hurt.mp3',
       death: '/audio/units/punk/death.m4a'

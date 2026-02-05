@@ -45,6 +45,7 @@ const sounds = useUnitSounds('punk')
 
 // Expose sound methods to parent
 defineExpose({
+  playSpawnSound: sounds.playSpawnSound,
   playAttackSound: sounds.playAttackSound,
   playHurtSound: sounds.playHurtSound,
   playDeathSound: sounds.playDeathSound

@@ -44,7 +44,7 @@ export function useUnitSounds(unitType: UnitType) {
     if (url) preloadAudio(url)
   })
 
-  function playSound(type: 'attack' | 'hurt' | 'death', volume: number = 0.6) {
+  function playSound(type: 'spawn' | 'attack' | 'hurt' | 'death', volume: number = 0.6) {
     const soundUrl = sounds[type]
     if (!soundUrl) return
     
@@ -61,6 +61,10 @@ export function useUnitSounds(unitType: UnitType) {
     } catch (error) {
       console.warn(`Error playing ${type} sound:`, error)
     }
+  }
+
+  function playSpawnSound() {
+    playSound('spawn', 0.9)
   }
 
   function playAttackSound() {
@@ -84,6 +88,7 @@ export function useUnitSounds(unitType: UnitType) {
   })
 
   return {
+    playSpawnSound,
     playAttackSound,
     playHurtSound,
     playDeathSound

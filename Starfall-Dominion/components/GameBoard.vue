@@ -251,6 +251,13 @@ function setUnitRef(unitId: string | undefined, el: any) {
 }
 
 // Expose methods for Game.vue to trigger sounds
+function playUnitSpawnSound(unitId: string) {
+  const unitRef = unitRefs.value.get(unitId)
+  if (unitRef && unitRef.playSpawnSound) {
+    unitRef.playSpawnSound()
+  }
+}
+
 function playUnitAttackSound(unitId: string) {
   const unitRef = unitRefs.value.get(unitId)
   if (unitRef && unitRef.playAttackSound) {
@@ -284,6 +291,7 @@ function getExplosionsAt(row: number, col: number) {
 const { activeAnimations, getAnimationsAt, triggerAttackAnimation } = useAttackAnimations()
 
 defineExpose({
+  playUnitSpawnSound,
   playUnitAttackSound,
   playUnitHurtSound,
   playUnitDeathSound,
