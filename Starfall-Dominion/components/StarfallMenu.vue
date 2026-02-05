@@ -234,7 +234,7 @@
       <div class="menu-footer">
         <div class="version">
           <span class="version-label">VERSION</span>
-          <span class="version-number">1.0.0</span>
+          <span class="version-number">{{ APP_VERSION }}</span>
         </div>
         <div class="separator">|</div>
         <div class="timestamp">{{ currentTime }}</div>
@@ -279,6 +279,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { APP_VERSION } from '~/config/app';
 
 type ButtonType = 'play' | 'editor' | 'more' | 'online' | 'local' | null;
 type ScreenType = 'main' | 'play-mode';

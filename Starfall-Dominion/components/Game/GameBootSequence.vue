@@ -4,7 +4,7 @@
     <div class="terminal-screen" v-if="showTerminal">
       <div class="terminal-content">
         <div class="terminal-header">
-          <span class="terminal-prompt">STARFALL DOMINION v2.1.0</span>
+          <span class="terminal-prompt">{{ APP_NAME }} v{{ APP_VERSION }}</span>
           <span class="terminal-cursor">_</span>
         </div>
         
@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { APP_VERSION, APP_NAME } from '~/config/app'
 
 const emit = defineEmits<{
   complete: []
