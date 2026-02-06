@@ -206,6 +206,9 @@ async function loadMapData() {
     await loadDefaultMap()
   }
   
+  // Initialize flags after map is loaded
+  initializeFlags()
+  
   mapLoading.value = false
   gamePhase.value = 'placement' // Now transition to placement phase
 }
@@ -268,6 +271,7 @@ const flagState = reactive<Map<string, { owner: Player | null, contestedBy: Play
 
 // Initialize flags by finding all flag terrain types
 const initializeFlags = () => {
+  flagState.clear()
   for (let row = 0; row < BOARD_SIZE; row++) {
     for (let col = 0; col < COLS_PER_ROW; col++) {
       if (getCellTerrain(row, col) === 'flag') {
@@ -277,9 +281,6 @@ const initializeFlags = () => {
     }
   }
 }
-
-// Call initialization
-initializeFlags()
 
 // Helper to get flag state at a position
 function getFlagAt(row: number, col: number) {
