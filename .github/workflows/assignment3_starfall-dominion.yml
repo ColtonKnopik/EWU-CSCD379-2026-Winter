@@ -29,6 +29,8 @@ jobs:
 
       - name: Build Vue app
         working-directory: ./Starfall-Dominion
+        env:
+          NUXT_PUBLIC_API_BASE: https://starfall-dominion-api.azurewebsites.net/api
         run: npm run generate
 
       - name: Copy startup script
@@ -60,9 +62,3 @@ jobs:
           app-name: 'Starfall-Dominion'
           publish-profile: ${{ secrets.STARFALL_PUBLISH_PROFILE }}
           package: .
-
-          
-
-
-
-
