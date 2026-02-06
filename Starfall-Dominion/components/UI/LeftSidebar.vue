@@ -14,6 +14,14 @@
             v-for="(action, index) in recentActions" 
             :key="index"
             class="history-item"
+            :class="{
+              'action-kill': action.text.includes('eliminated'),
+              'action-capture': action.text.includes('captured'),
+              'action-contest': action.text.includes('contesting'),
+              'action-damage': action.text.includes('dealt') && action.text.includes('damage'),
+              'action-recruit': action.text.includes('recruited'),
+              'action-death': action.text.includes('perished')
+            }"
           >
             <span class="history-turn rajdhani-font">T{{ action.turn }}</span>
             <span class="history-text rajdhani-font">{{ action.text }}</span>
@@ -230,7 +238,7 @@ const props = defineProps<{
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 200px;
+  max-height: 400px;
   overflow-y: auto;
 }
 
@@ -260,6 +268,61 @@ const props = defineProps<{
 .history-item:hover {
   background: rgba(0, 5, 15, 0.8);
   border-left-color: rgba(96, 165, 250, 0.8);
+}
+
+/* Action type specific styling */
+.history-item.action-kill {
+  border-left-color: rgba(239, 68, 68, 0.6);
+}
+
+.history-item.action-kill:hover {
+  border-left-color: rgba(239, 68, 68, 0.9);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.history-item.action-capture {
+  border-left-color: rgba(34, 197, 94, 0.6);
+}
+
+.history-item.action-capture:hover {
+  border-left-color: rgba(34, 197, 94, 0.9);
+  background: rgba(34, 197, 94, 0.05);
+}
+
+.history-item.action-contest {
+  border-left-color: rgba(251, 191, 36, 0.6);
+}
+
+.history-item.action-contest:hover {
+  border-left-color: rgba(251, 191, 36, 0.9);
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.history-item.action-damage {
+  border-left-color: rgba(249, 115, 22, 0.6);
+}
+
+.history-item.action-damage:hover {
+  border-left-color: rgba(249, 115, 22, 0.9);
+  background: rgba(249, 115, 22, 0.05);
+}
+
+.history-item.action-recruit {
+  border-left-color: rgba(96, 165, 250, 0.6);
+}
+
+.history-item.action-recruit:hover {
+  border-left-color: rgba(96, 165, 250, 0.9);
+  background: rgba(96, 165, 250, 0.05);
+}
+
+.history-item.action-death {
+  border-left-color: rgba(156, 163, 175, 0.6);
+}
+
+.history-item.action-death:hover {
+  border-left-color: rgba(156, 163, 175, 0.9);
+  background: rgba(156, 163, 175, 0.05);
 }
 
 .history-turn {

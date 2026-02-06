@@ -569,6 +569,12 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
   const wouldDie = defender.health - damage <= 0
   
   if (wouldDie) {
+    // Log unit kill
+    const attackerName = attacker.unitType.charAt(0).toUpperCase() + attacker.unitType.slice(1)
+    const defenderName = defender.unitType.charAt(0).toUpperCase() + defender.unitType.slice(1)
+    const playerName = attacker.player === 'player1' ? 'P1' : 'P2'
+    addAction(`${playerName} ${attackerName} eliminated enemy ${defenderName}`)
+    
     // Set health to 1 temporarily so unit still renders
     defender.health = 1
     attacker.actionsRemaining--
@@ -632,6 +638,12 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
     defender.health -= damage
     attacker.actionsRemaining--
     
+    // Log attack damage
+    const attackerName = attacker.unitType.charAt(0).toUpperCase() + attacker.unitType.slice(1)
+    const defenderName = defender.unitType.charAt(0).toUpperCase() + defender.unitType.slice(1)
+    const playerName = attacker.player === 'player1' ? 'P1' : 'P2'
+    addAction(`${playerName} ${attackerName} dealt ${damage} damage to ${defenderName}`)
+    
     // Play hurt sound for defender (delay to sync with animation impact)
     setTimeout(() => {
       if (gameBoardRef.value) {
@@ -665,6 +677,10 @@ function endTurn() {
         
         // Remove dead unit
         if (unit.health <= 0) {
+          const unitName = unit.unitType.charAt(0).toUpperCase() + unit.unitType.slice(1)
+          const playerName = unit.player === 'player1' ? 'P1' : 'P2'
+          addAction(`${playerName} ${unitName} perished from terrain hazard`)
+          
           const index = gameState.units.findIndex(u => u.id === unit.id)
           if (index !== -1) {
             gameState.units.splice(index, 1)
@@ -692,6 +708,9 @@ function endTurn() {
             // Update income
             if (previousOwner === null) {
               // Capturing neutral flag
+              const playerName = unit.player === 'player1' ? 'P1' : 'P2'
+              addAction(`${playerName} captured a neutral flag (+25 income)`)
+              
               if (unit.player === 'player1') {
                 goldState.player1.income += 25
               } else {
@@ -699,6 +718,10 @@ function endTurn() {
               }
             } else if (previousOwner !== unit.player) {
               // Stealing from opponent
+              const playerName = unit.player === 'player1' ? 'P1' : 'P2'
+              const enemyName = previousOwner === 'player1' ? 'P1' : 'P2'
+              addAction(`${playerName} captured flag from ${enemyName} (+25 income)`)
+              
               if (unit.player === 'player1') {
                 goldState.player1.income += 25
                 goldState.player2.income -= 25
@@ -709,6 +732,10 @@ function endTurn() {
             }
           } else if (flag.owner !== unit.player) {
             // Start contesting the flag
+            const playerName = unit.player === 'player1' ? 'P1' : 'P2'
+            const unitName = unit.unitType.charAt(0).toUpperCase() + unit.unitType.slice(1)
+            addAction(`${playerName} ${unitName} contesting flag at (${unit.row},${unit.col})`)
+            
             flag.contestedBy = unit.player
           }
         }
@@ -779,6 +806,11 @@ function handlePurchase(unitType: UnitType, cost: number) {
   
   gameState.units.push(newUnit)
   
+  // Log unit recruitment
+  const unitName = unitType.charAt(0).toUpperCase() + unitType.slice(1)
+  const playerName = gameState.currentPlayer === 'player1' ? 'P1' : 'P2'
+  addAction(`${playerName} recruited ${unitName} (${cost} gold)`)
+  
   // Play spawn sound
   nextTick(() => {
     if (gameBoardRef.value) {
@@ -816,6 +848,7 @@ function restartGame() {
   showShop.value = false
   shopSpawnPoint.value = null
   unitIdCounter = 5
+  recentActions.value = [] // Clear combat log on restart
 }
 
 // Computed for victory stats
@@ -868,10 +901,7 @@ function addAction(text: string) {
     turn: gameState.turn,
     text
   })
-  // Keep only last 5 actions
-  if (recentActions.value.length > 5) {
-    recentActions.value = recentActions.value.slice(0, 5)
-  }
+  // Keep all actions throughout the match (no limit)
 }
 
 // Boot sequence reveal functions
