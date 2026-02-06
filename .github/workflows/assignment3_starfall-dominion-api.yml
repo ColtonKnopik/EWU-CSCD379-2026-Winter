@@ -52,4 +52,5 @@ jobs:
           app-name: 'starfall-dominion-api'
           slot-name: 'Production'
           package: .
-          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_55CB5CAD3000450DB9D4EEC46C67B9E4 }}
+
+          publish-profile: ${{ secrets.STARFALL_API_PUBLISH_PROFILE }}
