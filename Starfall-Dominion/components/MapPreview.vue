@@ -96,7 +96,7 @@ function drawHexagon(
 
 function getCellScreenPosition(row: number, col: number) {
   // Mimic the exact CSS flexbox layout
-  const isOffsetRow = row % 2 === 0
+  const isOffsetRow = row % 2 === 1
   
   // X position: row offset + column position with overlap
   let x = isOffsetRow ? ROW_OFFSET_X : 0
