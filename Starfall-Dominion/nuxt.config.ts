@@ -1,17 +1,24 @@
 import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
 
 export default defineNuxtConfig({
-    // Compatibility & devtools
-    compatibilityDate: '2024-04-03',
-    devtools: { enabled: true },
+// Compatibility & devtools
+compatibilityDate: '2024-04-03',
+devtools: { enabled: true },
 
-    // Turn off SSR for static SPA
-    ssr: false,
+// Turn off SSR for static SPA
+ssr: false,
 
-    // Add this for static generation
-    nitro: {
-        preset: 'static'
-    },
+// Add this for static generation
+nitro: {
+    preset: 'static'
+},
+
+// Runtime config for API connection
+runtimeConfig: {
+    public: {
+        apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:5000/api'
+    }
+},
 
     // Build settings
     build: {

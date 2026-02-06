@@ -41,10 +41,10 @@ const showMapSelectionDialog = (): void => {
 const playWithCustomMap = (mapId: number | null): void => {
     console.log('Playing with map:', mapId);
     if (mapId === null) {
-      // Use default map (no mapId parameter)
+      // Use local baseMap.json (no mapId parameter)
       navigateTo('/game');
     } else {
-      // Use custom map from database
+      // Use map from database
       navigateTo(`/game?mapId=${mapId}`);
     }
 };

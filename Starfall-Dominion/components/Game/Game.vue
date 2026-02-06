@@ -182,39 +182,60 @@ const footerRevealing = ref(false)
 // Terrain map
 const terrainMap = new Map<string, TerrainType>()
 
+const { getMapJson, getMaps } = useMapApi()
+
 // Load map data
 async function loadMapData() {
   mapLoading.value = true
   
   if (props.mapId) {
-    // Load map from database
+    // Load map from database by ID
     try {
-      const response: any = await $fetch(`/api/maps/${props.mapId}`)
-      const mapData = response.data
-      
+      const data = await getMapJson(props.mapId)
       terrainMap.clear()
-      mapData.terrain_data.forEach(([key, value]: [string, TerrainType]) => {
-        terrainMap.set(key, value)
+      data.forEach(([key, value]: [string, string]) => {
+        terrainMap.set(key, value as TerrainType)
       })
-      
-      console.log('✅ Map loaded from database:', mapData.name)
+      console.log('✅ Map loaded from database, id:', props.mapId)
     } catch (error) {
-      console.error('❌ Failed to load map, using default:', error)
+      console.error('❌ Failed to load map from database, using baseMap.json fallback:', error)
       loadDefaultMap()
     }
   } else {
-    // Load default map
-    loadDefaultMap()
+    // Load default map (try database first, fallback to baseMap.json)
+    await loadDefaultMap()
   }
   
   mapLoading.value = false
   gamePhase.value = 'placement' // Now transition to placement phase
 }
 
-function loadDefaultMap() {
+async function loadDefaultMap() {
+  // Try to load from database first
+  try {
+    const response = await getMaps()
+    if (response.data.length > 0) {
+      const firstMap = response.data[0]
+      if (firstMap) {
+        const data = await getMapJson(firstMap.id)
+        terrainMap.clear()
+        data.forEach(([key, value]: [string, string]) => {
+          terrainMap.set(key, value as TerrainType)
+        })
+        console.log('✅ Default map loaded from database')
+        return
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ Database not available, using baseMap.json:', error)
+  }
+  
+  // Fallback to baseMap.json
+  terrainMap.clear()
   baseMapData.forEach(([key, value]: [string, TerrainType]) => {
     terrainMap.set(key, value)
   })
+  console.log('✅ Using baseMap.json fallback')
 }
 
 // Initialize map on mount

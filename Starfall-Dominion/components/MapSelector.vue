@@ -64,7 +64,7 @@
               {{ map.name }}
               <span v-if="map.isDefault" class="default-badge">
                 <span class="badge-glow"></span>
-                DEFAULT
+                LOCAL
               </span>
             </h3>
           </div>
@@ -76,7 +76,7 @@
           <div class="map-footer">
             <div class="footer-line"></div>
             <small class="rajdhani-font">
-              {{ map.isDefault ? 'BUILT-IN MAP' : `UPDATED: ${formatDate(map.updated_at).toUpperCase()}` }}
+              {{ map.isDefault ? 'LOCAL FALLBACK MAP' : `UPDATED: ${formatDate(map.updated_at).toUpperCase()}` }}
             </small>
           </div>
         </div>
@@ -114,6 +114,8 @@ import { ref, onMounted } from 'vue'
 import MapPreview from '~~/components/MapPreview.vue'
 import baseMapData from '~~/data/baseMap.json'
 
+const { getMaps, getMap } = useMapApi()
+
 const emit = defineEmits<{
   close: []
   select: [mapId: number | null]
@@ -122,11 +124,11 @@ const emit = defineEmits<{
 const maps = ref<any[]>([])
 const loading = ref(true)
 
-// Create default map object from baseMap.json
+// Create default map object from baseMap.json (used when API is unavailable)
 const defaultMap = {
   id: null,
   name: 'Default Map',
-  description: 'The standard battlefield',
+  description: 'The standard battlefield (local fallback)',
   terrain_data: baseMapData,
   created_at: new Date().toISOString(),
   updated_at: new Date().toISOString(),
@@ -140,13 +142,13 @@ onMounted(async () => {
 async function fetchMaps() {
   try {
     loading.value = true
-    const response: any = await $fetch('/api/maps')
+    const response = await getMaps()
     
     // Fetch full data including terrain for each map
     const mapsWithTerrain = await Promise.all(
       response.data.map(async (map: any) => {
         try {
-          const fullMap: any = await $fetch(`/api/maps/${map.id}`)
+          const fullMap = await getMap(map.id)
           return fullMap.data
         } catch (error) {
           console.error(`Failed to load terrain for map ${map.id}:`, error)
@@ -155,10 +157,10 @@ async function fetchMaps() {
       })
     )
     
-    // Always include the default map as the first option
+    // Include database maps + default map as fallback option
     maps.value = [defaultMap, ...mapsWithTerrain]
   } catch (error) {
-    console.error('Failed to fetch maps:', error)
+    console.error('Failed to fetch maps from database, using local default:', error)
     // On error, just show the default map
     maps.value = [defaultMap]
   } finally {
@@ -171,6 +173,7 @@ function selectMap(mapId: number | null) {
 }
 
 function formatDate(dateString: string) {
+  if (!dateString) return 'N/A'
   const date = new Date(dateString)
   return date.toLocaleDateString()
 }

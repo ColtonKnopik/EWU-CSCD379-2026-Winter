@@ -117,7 +117,7 @@
             </div>
             <div class="map-actions">
               <button @click="loadMapFromDatabase(map.id)" class="btn-load">Load</button>
-              <button @click="deleteMap(map.id)" class="btn-delete">Delete</button>
+              <button @click="deleteMapById(map.id)" class="btn-delete">Delete</button>
             </div>
           </div>
         </div>
@@ -131,6 +131,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import Cell, { type TerrainType } from '~~/components/Board/Cell.vue'
 import MapPreview from '~~/components/MapPreview.vue'
+
+const { getMaps, getMap, createMap, updateMap, deleteMap: deleteMapApi } = useMapApi()
 
 const BOARD_SIZE = 8
 const COLS_PER_ROW = 8
@@ -189,24 +191,18 @@ async function saveMapToDatabase() {
   try {
     if (currentMapId.value) {
       // Update existing map
-      await $fetch(`/api/maps/${currentMapId.value}`, {
-        method: 'PUT',
-        body: {
-          name: mapName.value,
-          description: mapDescription.value,
-          terrain_data: terrainData
-        }
+      await updateMap(currentMapId.value, {
+        name: mapName.value,
+        description: mapDescription.value,
+        terrain_data: terrainData
       })
       showStatus('Map updated successfully!', 'success')
     } else {
       // Create new map
-      const response: any = await $fetch('/api/maps', {
-        method: 'POST',
-        body: {
-          name: mapName.value,
-          description: mapDescription.value,
-          terrain_data: terrainData
-        }
+      const response = await createMap({
+        name: mapName.value,
+        description: mapDescription.value,
+        terrain_data: terrainData
       })
       currentMapId.value = response.data.id
       showStatus('Map saved successfully!', 'success')
@@ -219,7 +215,7 @@ async function saveMapToDatabase() {
 
 async function fetchMaps() {
   try {
-    const response: any = await $fetch('/api/maps')
+    const response = await getMaps()
     savedMaps.value = response.data
   } catch (error) {
     console.error('Failed to fetch maps:', error)
@@ -229,7 +225,7 @@ async function fetchMaps() {
 async function loadMapFromDatabase(mapId: number) {
   try {
     loading.value = true
-    const response: any = await $fetch(`/api/maps/${mapId}`)
+    const response = await getMap(mapId)
     const mapData = response.data
     
     // Load terrain data
@@ -252,13 +248,11 @@ async function loadMapFromDatabase(mapId: number) {
   }
 }
 
-async function deleteMap(mapId: number) {
+async function deleteMapById(mapId: number) {
   if (!confirm('Are you sure you want to delete this map?')) return
   
   try {
-    await $fetch(`/api/maps/${mapId}`, {
-      method: 'DELETE'
-    })
+    await deleteMapApi(mapId)
     
     if (currentMapId.value === mapId) {
       clearMap()
