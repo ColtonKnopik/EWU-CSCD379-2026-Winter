@@ -43,7 +43,7 @@
               <div class="item-border"></div>
               <div class="item-content">
                 <div class="item-icon">
-                  <img :src="unit.image" :alt="unit.name" />
+                  <div class="sprite-frame" :style="{ backgroundImage: `url(${unit.image})` }"></div>
                 </div>
                 <div class="item-info">
                   <div class="item-name">{{ unit.name }}</div>
@@ -99,7 +99,7 @@
             <div class="detail-image-section">
               <div class="image-container">
                 <div class="hologram-grid"></div>
-                <img :src="selectedUnit.image" :alt="selectedUnit.name" />
+                <div class="sprite-frame-large" :style="{ backgroundImage: `url(${selectedUnit.image})` }"></div>
                 <div class="image-scanlines"></div>
               </div>
             </div>

@@ -327,10 +327,12 @@
   border: 1px solid rgba(96, 165, 250, 0.3);
 }
 
-.item-icon img {
-  max-width: 80%;
-  max-height: 80%;
-  object-fit: contain;
+.item-icon .sprite-frame {
+  width: 80%;
+  height: 80%;
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  background-repeat: no-repeat;
   filter: drop-shadow(0 2px 8px rgba(96, 165, 250, 0.6));
 }
 
@@ -552,10 +554,13 @@
   100% { transform: translate(20px, 20px); }
 }
 
-.image-container img {
-  max-width: 60%;
-  max-height: 60%;
-  object-fit: contain;
+.image-container .sprite-frame-large {
+  width: 200px;
+  height: 200px;
+  aspect-ratio: 1/1;
+  background-size: 200% 200%;
+  background-position: 0% 0%;
+  background-repeat: no-repeat;
   filter: drop-shadow(0 8px 30px rgba(96, 165, 250, 0.8));
   animation: imageFloat 3s ease-in-out infinite;
   position: relative;
