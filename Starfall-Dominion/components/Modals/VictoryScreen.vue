@@ -30,7 +30,63 @@
         <div class="winner-info">
           <div class="winner-label">VICTOR</div>
           <div class="winner-name">{{ winner === 'player1' ? 'PLAYER ONE' : 'PLAYER TWO' }}</div>
-          <div class="winner-subtitle">TACTICAL SUPERIORITY ACHIEVED</div>
+          <div class="winner-subtitle">{{ victorySubtitle }}</div>
+        </div>
+      </div>
+
+      <!-- MVP Section -->
+      <div class="mvp-section">
+        <div class="section-title">
+          <span>MOST EFFECTIVE UNITS</span>
+          <div class="title-line"></div>
+        </div>
+        
+        <div class="mvp-grid">
+          <!-- Player 1 MVP -->
+          <div class="mvp-card player1">
+            <div class="mvp-header">
+              <div class="mvp-player-label">PLAYER 1</div>
+              <div class="mvp-tag">MVP</div>
+            </div>
+            <template v-if="player1Mvp">
+              <div class="mvp-unit-name">{{ formatUnitType(player1Mvp.unitType) }}</div>
+              <div class="mvp-stats">
+                <div class="mvp-stat">
+                  <span class="mvp-stat-value">{{ player1Mvp.totalDamage }}</span>
+                  <span class="mvp-stat-label">DAMAGE</span>
+                </div>
+                <div class="mvp-stat-divider"></div>
+                <div class="mvp-stat">
+                  <span class="mvp-stat-value">{{ player1Mvp.kills }}</span>
+                  <span class="mvp-stat-label">KILLS</span>
+                </div>
+              </div>
+            </template>
+            <div v-else class="mvp-none">NO COMBAT DATA</div>
+          </div>
+
+          <!-- Player 2 MVP -->
+          <div class="mvp-card player2">
+            <div class="mvp-header">
+              <div class="mvp-player-label">PLAYER 2</div>
+              <div class="mvp-tag">MVP</div>
+            </div>
+            <template v-if="player2Mvp">
+              <div class="mvp-unit-name">{{ formatUnitType(player2Mvp.unitType) }}</div>
+              <div class="mvp-stats">
+                <div class="mvp-stat">
+                  <span class="mvp-stat-value">{{ player2Mvp.totalDamage }}</span>
+                  <span class="mvp-stat-label">DAMAGE</span>
+                </div>
+                <div class="mvp-stat-divider"></div>
+                <div class="mvp-stat">
+                  <span class="mvp-stat-value">{{ player2Mvp.kills }}</span>
+                  <span class="mvp-stat-label">KILLS</span>
+                </div>
+              </div>
+            </template>
+            <div v-else class="mvp-none">NO COMBAT DATA</div>
+          </div>
         </div>
       </div>
 
@@ -42,7 +98,6 @@
         </div>
         
         <div class="stats-grid">
-          <!-- Combat Stats -->
           <div class="stat-card">
             <div class="stat-icon">
               <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -93,14 +148,23 @@
 
           <div class="stat-card">
             <div class="stat-icon">
-              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path d="M17.5,4.5C15.55,4.5 13.45,4.9 12,6C10.55,4.9 8.45,4.5 6.5,4.5C5.05,4.5 3.51,4.72 2.22,5.29C1.49,5.62 1,6.33 1,7.14V18.42C1,19.72 2.22,20.68 3.48,20.36C4.46,20.11 5.5,20 6.5,20C8.06,20 9.72,20.26 11.06,20.92C11.66,21.22 12.34,21.22 12.94,20.92C14.28,20.26 15.94,20 17.5,20C18.5,20 19.54,20.11 20.52,20.36C21.78,20.68 23,19.72 23,18.42V7.14C23,6.33 22.51,5.62 21.78,5.29C20.49,4.72 18.95,4.5 17.5,4.5M21,18.42C21,18.92 20.55,19.32 20.05,19.21C19.05,18.95 18.03,18.84 17.5,18.84C15.8,18.84 13.15,19.5 12,20.5V8C13.15,7 15.8,6.34 17.5,6.34C18.7,6.34 19.91,6.5 21,6.84V18.42Z" fill="currentColor"/>
+              <svg v-if="victoryCondition === 'captain-eliminated'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7v6.5c0 5.51 3.84 10.67 9 12 5.16-1.33 9-6.49 9-12V7l-10-5z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <line x1="8" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="2"/>
+                <line x1="16" y1="8" x2="8" y2="16" stroke="currentColor" stroke-width="2"/>
+              </svg>
+              <svg v-else-if="victoryCondition === 'doomsday'" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
+                <path d="M12 6v6l4 2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M14.4 6L14 4H5v17h2v-7h5.6l.4 2h7V6h-5.6z" fill="currentColor"/>
               </svg>
             </div>
             <div class="stat-content">
               <div class="stat-label">VICTORY CONDITION</div>
-              <div class="stat-value victory-type">DECISIVE</div>
-              <div class="stat-unit">ENEMY CAPTAIN ELIMINATED</div>
+              <div class="stat-value victory-type" :class="victoryCondition">{{ victoryLabel }}</div>
+              <div class="stat-unit">{{ victoryDescription }}</div>
             </div>
             <div class="stat-bar">
               <div class="stat-bar-fill victory" :style="{ width: '100%' }"></div>
@@ -154,11 +218,21 @@
 import { computed } from 'vue'
 import { type Player } from '~~/types/gameTypes'
 
+interface MvpData {
+  unitType: string
+  player: Player
+  totalDamage: number
+  kills: number
+}
+
 interface Props {
   winner: Player
   finalTurn: number
   unitsRemaining: number
   goldCollected: number
+  victoryCondition: 'captain-eliminated' | 'doomsday' | 'forfeit'
+  player1Mvp: MvpData | null
+  player2Mvp: MvpData | null
 }
 
 const props = defineProps<Props>()
@@ -166,6 +240,37 @@ const props = defineProps<Props>()
 defineEmits<{
   restart: []
 }>()
+
+const victoryLabel = computed(() => {
+  switch (props.victoryCondition) {
+    case 'captain-eliminated': return 'DECISIVE'
+    case 'doomsday': return 'DOOMSDAY'
+    case 'forfeit': return 'FORFEIT'
+    default: return 'DECISIVE'
+  }
+})
+
+const victoryDescription = computed(() => {
+  switch (props.victoryCondition) {
+    case 'captain-eliminated': return 'ENEMY CAPTAIN ELIMINATED'
+    case 'doomsday': return 'TOTAL FLAG DOMINATION'
+    case 'forfeit': return 'OPPONENT SURRENDERED'
+    default: return 'ENEMY CAPTAIN ELIMINATED'
+  }
+})
+
+const victorySubtitle = computed(() => {
+  switch (props.victoryCondition) {
+    case 'captain-eliminated': return 'TACTICAL SUPERIORITY ACHIEVED'
+    case 'doomsday': return 'ABSOLUTE DOMINATION'
+    case 'forfeit': return 'ENEMY FORCES SURRENDERED'
+    default: return 'TACTICAL SUPERIORITY ACHIEVED'
+  }
+})
+
+function formatUnitType(unitType: string): string {
+  return unitType.charAt(0).toUpperCase() + unitType.slice(1)
+}
 
 // Calculate combat efficiency based on turn count and units remaining
 const getCombatEfficiency = () => {
@@ -453,6 +558,141 @@ const getCombatEfficiency = () => {
 /* Stats Section */
 .stats-section {
   margin-bottom: 2rem;
+}
+
+/* MVP Section */
+.mvp-section {
+  margin-bottom: 2rem;
+}
+
+.mvp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.mvp-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  border-top: 3px solid;
+  padding: 1.25rem;
+  animation: statFadeIn 0.5s ease 0.35s backwards;
+}
+
+.mvp-card.player1 {
+  border-top-color: #60a5fa;
+}
+
+.mvp-card.player2 {
+  border-top-color: #a855f7;
+}
+
+.mvp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.mvp-player-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(147, 197, 253, 0.7);
+  letter-spacing: 0.1rem;
+}
+
+.mvp-tag {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 0.625rem;
+  font-weight: 900;
+  letter-spacing: 0.15rem;
+  padding: 2px 8px;
+  border-radius: 2px;
+}
+
+.player1 .mvp-tag {
+  color: #60a5fa;
+  background: rgba(96, 165, 250, 0.15);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.player2 .mvp-tag {
+  color: #a855f7;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.mvp-unit-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 900;
+  margin-bottom: 1rem;
+  line-height: 1;
+}
+
+.player1 .mvp-unit-name {
+  color: #60a5fa;
+  text-shadow: 0 0 15px rgba(96, 165, 250, 0.6);
+}
+
+.player2 .mvp-unit-name {
+  color: #a855f7;
+  text-shadow: 0 0 15px rgba(168, 85, 247, 0.6);
+}
+
+.mvp-stats {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.mvp-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mvp-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fbbf24;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+}
+
+.mvp-stat-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: rgba(147, 197, 253, 0.6);
+  letter-spacing: 0.1rem;
+}
+
+.mvp-stat-divider {
+  width: 1px;
+  height: 30px;
+  background: linear-gradient(180deg, transparent, rgba(96, 165, 250, 0.4), transparent);
+}
+
+.mvp-none {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(147, 197, 253, 0.4);
+  letter-spacing: 0.05rem;
+  padding: 1rem 0;
+}
+
+/* Victory condition color variants */
+.stat-value.doomsday {
+  color: #ef4444;
+  text-shadow: 0 0 15px rgba(239, 68, 68, 0.8);
+}
+
+.stat-value.forfeit {
+  color: #fbbf24;
+  text-shadow: 0 0 15px rgba(251, 191, 36, 0.8);
 }
 
 .section-title {

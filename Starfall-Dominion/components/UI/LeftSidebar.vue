@@ -20,7 +20,8 @@
               'action-contest': action.text.includes('contesting'),
               'action-damage': action.text.includes('dealt') && action.text.includes('damage'),
               'action-recruit': action.text.includes('recruited'),
-              'action-death': action.text.includes('perished')
+              'action-death': action.text.includes('perished'),
+              'action-doomsday': action.text.includes('Doomsday') || action.text.includes('DOOMSDAY')
             }"
           >
             <span class="history-turn rajdhani-font">T{{ action.turn }}</span>
@@ -323,6 +324,22 @@ const props = defineProps<{
 .history-item.action-death:hover {
   border-left-color: rgba(156, 163, 175, 0.9);
   background: rgba(156, 163, 175, 0.05);
+}
+
+.history-item.action-doomsday {
+  border-left-color: rgba(239, 68, 68, 0.8);
+  background: rgba(239, 68, 68, 0.08);
+  animation: doomsday-log-pulse 2s ease-in-out infinite;
+}
+
+.history-item.action-doomsday:hover {
+  border-left-color: rgba(239, 68, 68, 1);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+@keyframes doomsday-log-pulse {
+  0%, 100% { background: rgba(239, 68, 68, 0.08); }
+  50% { background: rgba(239, 68, 68, 0.15); }
 }
 
 .history-turn {

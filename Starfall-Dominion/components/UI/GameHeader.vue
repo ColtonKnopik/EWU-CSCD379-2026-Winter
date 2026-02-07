@@ -26,9 +26,15 @@
     </div>
 
     <div class="center-section">
-      <div class="turn-counter">
+      <div class="turn-counter" :class="{ 'doomsday-active': doomsdayTurns > 0 }">
         <div class="turn-label rajdhani-font">TURN</div>
         <div class="turn-number orbitron-font">{{ turn }}</div>
+        <DoomsdayCounter
+          v-if="doomsdayTurns > 0 && doomsdayPlayer"
+          :controlling-player="doomsdayPlayer"
+          :turns-held="doomsdayTurns"
+          :threshold="doomsdayThreshold"
+        />
       </div>
       <button 
         @click="handleEndTurn" 
@@ -73,6 +79,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import type { Player } from '~~/types/gameTypes'
+import DoomsdayCounter from '~~/components/UI/DoomsdayCounter.vue'
 
 defineProps<{
   turn: number
@@ -81,6 +88,9 @@ defineProps<{
   player1Income: number
   player2Gold: number
   player2Income: number
+  doomsdayPlayer: Player | null
+  doomsdayTurns: number
+  doomsdayThreshold: number
 }>()
 
 const emit = defineEmits<{
@@ -393,6 +403,23 @@ function handleEndTurn() {
   }
   50% {
     transform: translateX(100%);
+  }
+}
+
+.turn-counter.doomsday-active {
+  border-color: rgba(239, 68, 68, 0.6);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  animation: doomsday-border-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes doomsday-border-pulse {
+  0%, 100% {
+    border-color: rgba(239, 68, 68, 0.6);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 1);
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.5);
   }
 }
 

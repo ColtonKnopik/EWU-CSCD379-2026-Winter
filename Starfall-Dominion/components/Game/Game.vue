@@ -30,6 +30,9 @@
       :player1-income="goldState.player1.income"
       :player2-gold="goldState.player2.gold"
       :player2-income="goldState.player2.income"
+      :doomsday-player="doomsdayState.controllingPlayer"
+      :doomsday-turns="doomsdayState.turnsHeld"
+      :doomsday-threshold="doomsdayState.threshold"
       @end-turn="endTurn"
     />
 
@@ -109,6 +112,9 @@
         :final-turn="gameState.turn"
         :units-remaining="victoryStats.unitsRemaining"
         :gold-collected="victoryStats.goldCollected"
+        :victory-condition="victoryCondition"
+        :player1-mvp="victoryStats.player1Mvp"
+        :player2-mvp="victoryStats.player2Mvp"
         @restart="restartGame"
       />
     </template>
@@ -269,6 +275,26 @@ const goldState = reactive({
 // Flag tracking - maps "row-col" to { owner: Player | null, contestedBy: Player | null }
 const flagState = reactive<Map<string, { owner: Player | null, contestedBy: Player | null }>>(new Map())
 
+// Doomsday counter - win by controlling all flags for consecutive turns
+const doomsdayState = reactive({
+  controllingPlayer: null as Player | null,
+  turnsHeld: 0,
+  threshold: 4
+})
+
+// Victory condition tracking
+type VictoryCondition = 'captain-eliminated' | 'doomsday' | 'forfeit'
+const victoryCondition = ref<VictoryCondition>('captain-eliminated')
+
+// Unit damage tracking for MVP stats
+interface UnitDamageRecord {
+  unitType: string
+  player: Player
+  totalDamage: number
+  kills: number
+}
+const unitDamageStats = reactive<Record<string, UnitDamageRecord>>({})
+
 // Initialize flags by finding all flag terrain types
 const initializeFlags = () => {
   flagState.clear()
@@ -297,6 +323,17 @@ function getFlagOwner(row: number, col: number): Player | null {
 function isFlagContested(row: number, col: number): boolean {
   const flag = getFlagAt(row, col)
   return flag?.contestedBy !== null
+}
+
+function checkDoomsdayCondition(): Player | null {
+  const allFlags = Array.from(flagState.values())
+  if (allFlags.length === 0) return null
+  
+  const firstFlag = allFlags[0]!
+  if (firstFlag.owner === null) return null
+  
+  const firstOwner = firstFlag.owner
+  return allFlags.every(f => f.owner === firstOwner) ? firstOwner : null
 }
 
 const actionMode = ref<'none' | 'move' | 'attack'>('none')
@@ -513,9 +550,11 @@ function checkWinCondition() {
   const player2Captain = gameState.units.find(u => u.player === 'player2' && u.unitType === 'captain')
   
   if (!player1Captain) {
+    victoryCondition.value = 'captain-eliminated'
     winner.value = 'player2'
     gamePhase.value = 'victory'
   } else if (!player2Captain) {
+    victoryCondition.value = 'captain-eliminated'
     winner.value = 'player1'
     gamePhase.value = 'victory'
   }
@@ -567,6 +606,20 @@ function attackUnit(attacker: UnitType, defender: UnitType) {
   
   const damage = attacker.attackPower
   const wouldDie = defender.health - damage <= 0
+  
+  // Track damage stats for MVP
+  const record = unitDamageStats[attacker.id]
+  if (record) {
+    record.totalDamage += damage
+    if (wouldDie) record.kills++
+  } else {
+    unitDamageStats[attacker.id] = {
+      unitType: attacker.unitType,
+      player: attacker.player,
+      totalDamage: damage,
+      kills: wouldDie ? 1 : 0
+    }
+  }
   
   if (wouldDie) {
     // Log unit kill
@@ -753,6 +806,37 @@ function endTurn() {
     }
   })
   
+  // Check Doomsday condition - one player controls all flags
+  const dominator = checkDoomsdayCondition()
+  
+  if (dominator) {
+    if (doomsdayState.controllingPlayer === dominator) {
+      doomsdayState.turnsHeld++
+    } else {
+      doomsdayState.controllingPlayer = dominator
+      doomsdayState.turnsHeld = 1
+    }
+    
+    if (doomsdayState.turnsHeld >= doomsdayState.threshold) {
+      const playerName = dominator === 'player1' ? 'P1' : 'P2'
+      addAction(`DOOMSDAY! ${playerName} wins by total domination!`)
+      victoryCondition.value = 'doomsday'
+      winner.value = dominator
+      gamePhase.value = 'victory'
+      return
+    }
+    
+    const playerName = dominator === 'player1' ? 'P1' : 'P2'
+    const remaining = doomsdayState.threshold - doomsdayState.turnsHeld
+    addAction(`Doomsday ${doomsdayState.turnsHeld}/${doomsdayState.threshold} - ${playerName} controls all flags`)
+  } else {
+    if (doomsdayState.turnsHeld > 0) {
+      addAction(`Doomsday averted - flag control broken`)
+    }
+    doomsdayState.controllingPlayer = null
+    doomsdayState.turnsHeld = 0
+  }
+  
   // Reset all units' actions for the current player
   gameState.units.forEach(unit => {
     if (unit.player === gameState.currentPlayer) {
@@ -842,6 +926,10 @@ function restartGame() {
   goldState.player2 = { gold: 100, income: 10 }
   flagState.clear()
   initializeFlags()
+  doomsdayState.controllingPlayer = null
+  doomsdayState.turnsHeld = 0
+  victoryCondition.value = 'captain-eliminated'
+  Object.keys(unitDamageStats).forEach(key => delete unitDamageStats[key])
   validMoves.value = []
   validAttacks.value = []
   actionMode.value = 'none'
@@ -853,18 +941,34 @@ function restartGame() {
 
 // Computed for victory stats
 const victoryStats = computed(() => {
-  if (!winner.value) return { unitsRemaining: 0, goldCollected: 0 }
+  if (!winner.value) return { unitsRemaining: 0, goldCollected: 0, player1Mvp: null, player2Mvp: null }
   const winnerGold = winner.value === 'player1' ? goldState.player1.gold : goldState.player2.gold
   const winnerUnits = gameState.units.filter(u => u.player === winner.value).length
+  
+  // Calculate MVPs by total damage dealt
+  let p1Best: UnitDamageRecord | null = null
+  let p2Best: UnitDamageRecord | null = null
+  for (const record of Object.values(unitDamageStats)) {
+    if (record.player === 'player1' && (!p1Best || record.totalDamage > p1Best.totalDamage)) {
+      p1Best = record
+    }
+    if (record.player === 'player2' && (!p2Best || record.totalDamage > p2Best.totalDamage)) {
+      p2Best = record
+    }
+  }
+  
   return {
     unitsRemaining: winnerUnits,
-    goldCollected: winnerGold
+    goldCollected: winnerGold,
+    player1Mvp: p1Best ? { ...p1Best } : null,
+    player2Mvp: p2Best ? { ...p2Best } : null
   }
 })
 
 // Sidebar action handlers
 function handleForfeit() {
   if (confirm('Are you sure you want to forfeit the match?')) {
+    victoryCondition.value = 'forfeit'
     winner.value = gameState.currentPlayer === 'player1' ? 'player2' : 'player1'
     gamePhase.value = 'victory'
   }
