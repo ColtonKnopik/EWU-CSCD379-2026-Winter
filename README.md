@@ -21,14 +21,14 @@
 
 ### Key Features
 
-- ** Tactical Hex-Grid Combat** - Master the art of hexagonal warfare
-- ** Local 1v1 PvP** - Face off against a friend on the same device
-- ** Diverse Unit Types** - Deploy Captains, Marines, Berserkers, and specialized units
-- ** Dynamic Economy** - Manage gold and income to build your army
-- ** Capture Points** - Control flags to secure victory
-- ** Cinematic Effects** - Experience explosive combat with stunning visual feedback
-- ** Real-Time Combat Log** - Track every move, attack, and elimination
-- ** Customizable Settings** - Adjust animation speed, sound, and grid visibility
+- **Tactical Hex-Grid Combat** - Master the art of hexagonal warfare
+- **Local 1v1 PvP** - Face off against a friend on the same device
+- **Diverse Unit Types** - Deploy Captains, Marines, Berserkers, and specialized units
+- **Dynamic Economy** - Manage gold and income to build your army
+- **Capture Points** - Control flags to secure victory
+- **Cinematic Effects** - Experience explosive combat with stunning visual feedback
+- **Real-Time Combat Log** - Track every move, attack, and elimination
+- **Customizable Settings** - Adjust animation speed, sound, and grid visibility
 
 ---
 
