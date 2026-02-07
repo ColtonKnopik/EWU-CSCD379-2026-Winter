@@ -10,7 +10,10 @@
     @click="$emit('click')"
   >
     <template #icon>
-      <div class="berserker-sprite" :class="player"></div>
+      <div 
+        class="berserker-sprite" 
+        :class="[player, { attacking: isAttacking }]"
+      ></div>
     </template>
   </Unit>
 </template>
@@ -27,11 +30,13 @@ interface Props {
   actionsRemaining: number
   isSelected?: boolean
   currentPlayer?: Player
+  isAttacking?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props>(), {
   isSelected: false,
-  currentPlayer: 'player1'
+  currentPlayer: 'player1',
+  isAttacking: false
 })
 
 defineEmits<{
@@ -55,9 +60,9 @@ defineExpose({
   width: 95%;
   height: 95%;
   background-image: url('../../data/sprites/Berserker.png');
-  background-size: 100% 200%; /* 2 frames vertically = 200% height */
+  background-size: 200% 200%; /* 2x2 grid: attack frame in top right */
   background-repeat: no-repeat;
-  background-position: 0 0%;
+  background-position: 0% 0%;
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4));
   transition: filter 0.2s ease;
   animation: berserker-breathe 2.5s steps(2) infinite;
@@ -74,8 +79,15 @@ defineExpose({
           drop-shadow(0 0 10px rgba(220, 38, 38, 0.3));
 }
 
+/* Attack animation: show top right frame */
+    .berserker-sprite.attacking {
+        background-position: 100% 0%;
+        animation: none;
+    }
+
+/* Breathing animation: cycle between left column frames (top left and bottom left) */
 @keyframes berserker-breathe {
-  0% { background-position: 0 0%; }
-  100% { background-position: 0 200%; }
+    0% { background-position: 0% 0%; }
+    100% { background-position: 0% 200%; }
 }
 </style>

@@ -81,8 +81,8 @@ defineExpose({
 
 /* Attack animation state - show bottom-right frame */
 .daft-sprite.attacking {
-  background-position: 100% 0%; /* Top-right: Attack frame */
-  animation: none; /* Override idle animation */
+  background-position: 100% 0%; 
+  animation: none; 
 }
 
 @keyframes daft-breathe {
