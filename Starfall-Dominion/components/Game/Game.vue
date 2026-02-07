@@ -806,35 +806,37 @@ function endTurn() {
     }
   })
   
-  // Check Doomsday condition - one player controls all flags
-  const dominator = checkDoomsdayCondition()
-  
-  if (dominator) {
-    if (doomsdayState.controllingPlayer === dominator) {
-      doomsdayState.turnsHeld++
-    } else {
-      doomsdayState.controllingPlayer = dominator
-      doomsdayState.turnsHeld = 1
-    }
+  // Check Doomsday condition - only after both players have acted (when player 2 ends turn)
+  if (gameState.currentPlayer === 'player2') {
+    const dominator = checkDoomsdayCondition()
     
-    if (doomsdayState.turnsHeld >= doomsdayState.threshold) {
+    if (dominator) {
+      if (doomsdayState.controllingPlayer === dominator) {
+        doomsdayState.turnsHeld++
+      } else {
+        doomsdayState.controllingPlayer = dominator
+        doomsdayState.turnsHeld = 1
+      }
+      
+      if (doomsdayState.turnsHeld >= doomsdayState.threshold) {
+        const playerName = dominator === 'player1' ? 'P1' : 'P2'
+        addAction(`DOOMSDAY! ${playerName} wins by total domination!`)
+        victoryCondition.value = 'doomsday'
+        winner.value = dominator
+        gamePhase.value = 'victory'
+        return
+      }
+      
       const playerName = dominator === 'player1' ? 'P1' : 'P2'
-      addAction(`DOOMSDAY! ${playerName} wins by total domination!`)
-      victoryCondition.value = 'doomsday'
-      winner.value = dominator
-      gamePhase.value = 'victory'
-      return
+      const remaining = doomsdayState.threshold - doomsdayState.turnsHeld
+      addAction(`Doomsday ${doomsdayState.turnsHeld}/${doomsdayState.threshold} - ${playerName} controls all flags`)
+    } else {
+      if (doomsdayState.turnsHeld > 0) {
+        addAction(`Doomsday averted - flag control broken`)
+      }
+      doomsdayState.controllingPlayer = null
+      doomsdayState.turnsHeld = 0
     }
-    
-    const playerName = dominator === 'player1' ? 'P1' : 'P2'
-    const remaining = doomsdayState.threshold - doomsdayState.turnsHeld
-    addAction(`Doomsday ${doomsdayState.turnsHeld}/${doomsdayState.threshold} - ${playerName} controls all flags`)
-  } else {
-    if (doomsdayState.turnsHeld > 0) {
-      addAction(`Doomsday averted - flag control broken`)
-    }
-    doomsdayState.controllingPlayer = null
-    doomsdayState.turnsHeld = 0
   }
   
   // Reset all units' actions for the current player
