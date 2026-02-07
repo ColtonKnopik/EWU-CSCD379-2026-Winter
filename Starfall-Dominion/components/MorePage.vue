@@ -317,12 +317,6 @@
                     </svg>
                     <span>GitHub Repository</span>
                   </a>
-                  <a href="mailto:feedback@starfalldominion.game" class="contact-link">
-                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="currentColor"/>
-                    </svg>
-                    <span>Email Support</span>
-                  </a>
                 </div>
               </div>
             </div>
@@ -359,25 +353,39 @@ const handleSubmitFeedback = async () => {
   feedbackStatus.value = null
 
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    const formspreeEndpoint = 'https://formspree.io/f/mpqjzqby'
     
-    // In a real app, you'd send this to your backend
-    console.log('Feedback submitted:', feedbackForm.value)
-    
-    feedbackStatus.value = 'success'
-    
-    // Reset form
-    setTimeout(() => {
-      feedbackForm.value = {
-        name: '',
-        email: '',
-        type: 'general',
-        message: ''
-      }
-      feedbackStatus.value = null
-    }, 3000)
+    const response = await fetch(formspreeEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: feedbackForm.value.name,
+        email: feedbackForm.value.email,
+        feedbackType: feedbackForm.value.type,
+        message: feedbackForm.value.message,
+      }),
+    })
+
+    if (response.ok) {
+      feedbackStatus.value = 'success'
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        feedbackForm.value = {
+          name: '',
+          email: '',
+          type: 'general',
+          message: ''
+        }
+        feedbackStatus.value = null
+      }, 3000)
+    } else {
+      throw new Error('Form submission failed')
+    }
   } catch (error) {
+    console.error('Feedback submission error:', error)
     feedbackStatus.value = 'error'
   } finally {
     isSubmitting.value = false
