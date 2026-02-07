@@ -3,7 +3,7 @@
     <div class="toolbar">
       <div class="header-section">
         <h2>Map Editor</h2>
-        <NuxtLink to="/" class="back-button">‚Üê Back to Game</NuxtLink>
+        <NuxtLink to="/" class="back-button">? Back to Game</NuxtLink>
       </div>
 
       <!-- Map Info Section -->
@@ -27,72 +27,93 @@
           ></textarea>
         </div>
       </div>
-      
-      <div class="terrain-selector">
-        <button
-          v-for="terrain in terrains"
-          :key="terrain.type"
-          :class="['terrain-button', terrain.type, { active: selectedTerrain === terrain.type }]"
-          @click="selectedTerrain = terrain.type"
-        >
-          {{ terrain.label }}
-        </button>
-      </div>
-      
-      <div class="actions">
-        <button @click="saveMapToDatabase" class="action-button save">Save to Database</button>
-        <button @click="showLoadModal = true" class="action-button load">Load Map</button>
-        <button @click="clearMap" class="action-button clear">Clear Map</button>
-        <button @click="exportMap" class="action-button export">Export JSON</button>
+
+      <!-- Tool Selection -->
+      <div class="tool-section">
+        <div class="tool-group">
+          <span class="tool-group-label">Terrain</span>
+          <div class="terrain-selector">
+            <button
+              v-for="terrain in terrains"
+              :key="terrain.type"
+              :class="['terrain-button', terrain.type, { active: selectedTool === 'terrain' && selectedTerrain === terrain.type }]"
+              @click="selectTerrain(terrain.type)"
+            >
+              {{ terrain.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="tool-group">
+          <span class="tool-group-label">Spawn Points</span>
+          <div class="spawn-selector">
+            <button
+              :class="['spawn-button', 'p1', { active: selectedTool === 'p1-spawn', placed: p1Spawn }]"
+              @click="selectedTool = 'p1-spawn'"
+            >
+              P1 Spawn {{ p1Spawn ? '?' : '' }}
+            </button>
+            <button
+              :class="['spawn-button', 'p2', { active: selectedTool === 'p2-spawn', placed: p2Spawn }]"
+              @click="selectedTool = 'p2-spawn'"
+            >
+              P2 Spawn {{ p2Spawn ? '?' : '' }}
+            </button>
+          </div>
+          <div class="spawn-hint">P1: Left 3 columns ∑ P2: Right 3 columns</div>
+        </div>
       </div>
 
-      <!-- Status message -->
+      <div class="actions">
+        <button @click="saveMapToDatabase" class="action-button save" :disabled="!canSave">
+          {{ saveButtonLabel }}
+        </button>
+        <button @click="openLoadModal" class="action-button load">Load Map</button>
+        <button @click="clearMap" class="action-button clear">Clear Map</button>
+      </div>
+
+      <!-- Spawn Status -->
+      <div class="spawn-status">
+        <div :class="['spawn-indicator', { placed: p1Spawn }]">
+          P1 Spawn: {{ p1Spawn ? 'Placed' : 'Not placed' }}
+        </div>
+        <div :class="['spawn-indicator', { placed: p2Spawn }]">
+          P2 Spawn: {{ p2Spawn ? 'Placed' : 'Not placed' }}
+        </div>
+      </div>
+
       <div v-if="statusMessage" :class="['status-message', statusType]">
         {{ statusMessage }}
       </div>
     </div>
 
     <div class="board-wrapper">
-      <div class="editor-columns">
-        <!-- Main Board -->
-        <div class="board-container">
-          <h3 class="section-title">Map Editor</h3>
-          <div class="board">
-            <div
-              v-for="row in BOARD_SIZE"
-              :key="row"
-              class="hex-row"
-              :class="{ offset: row % 2 === 0 }"
-            >
-              <Cell
-                v-for="col in COLS_PER_ROW"
-                :key="`${row}-${col}`"
-                :row="row - 1"
-                :col="col - 1"
-                :terrain-type="getCellTerrain(row - 1, col - 1)"
-                @click="onCellClick(row - 1, col - 1)"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Live Preview -->
-        <div class="preview-container">
-          <h3 class="section-title">Live Preview</h3>
-          <div class="preview-box">
-            <MapPreview 
-              :terrain-data="Array.from(terrainMap.entries())"
-              :size="280"
+      <div class="board">
+        <div
+          v-for="row in BOARD_SIZE"
+          :key="row"
+          class="hex-row"
+          :class="{ offset: row % 2 === 0 }"
+        >
+          <div
+            v-for="col in COLS_PER_ROW"
+            :key="`${row}-${col}`"
+            class="cell-slot"
+            :class="getCellHighlight(row - 1, col - 1)"
+          >
+            <Cell
+              :row="row - 1"
+              :col="col - 1"
+              :terrain-type="getCellTerrain(row - 1, col - 1)"
+              @click="onCellClick(row - 1, col - 1)"
             />
           </div>
-          <p class="preview-hint">This is how your map will appear in the map selector</p>
         </div>
       </div>
     </div>
 
     <div class="info">
-      <p>Click cells to paint with selected terrain type</p>
-      <p>Current tool: <strong>{{ selectedTerrain }}</strong></p>
+      <p>Current tool: <strong>{{ currentToolLabel }}</strong></p>
       <p v-if="currentMapId" class="current-map">Editing: <strong>{{ mapName }}</strong></p>
     </div>
 
@@ -128,9 +149,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import Cell, { type TerrainType } from '~~/components/Board/Cell.vue'
-import MapPreview from '~~/components/MapPreview.vue'
 
 const { getMaps, getMap, createMap, updateMap, deleteMap: deleteMapApi } = useMapApi()
 
@@ -143,10 +163,12 @@ const terrains = [
   { type: 'lava' as TerrainType, label: 'Lava' },
   { type: 'void' as TerrainType, label: 'Void' },
   { type: 'mountain' as TerrainType, label: 'Mountain' },
-  { type: 'spawn' as TerrainType, label: 'Spawn' },
   { type: 'flag' as TerrainType, label: 'Flag' },
 ]
 
+type ToolMode = 'terrain' | 'p1-spawn' | 'p2-spawn'
+
+const selectedTool = ref<ToolMode>('terrain')
 const selectedTerrain = ref<TerrainType>('land')
 const terrainMap = reactive(new Map<string, TerrainType>())
 const mapName = ref('')
@@ -158,11 +180,31 @@ const showLoadModal = ref(false)
 const savedMaps = ref<any[]>([])
 const loading = ref(false)
 
+// Spawn tracking
+const p1Spawn = ref<{ row: number; col: number } | null>(null)
+const p2Spawn = ref<{ row: number; col: number } | null>(null)
+
+// Can only save when both spawns are placed and map has a name
+const canSave = computed(() => {
+  return mapName.value.trim() !== '' && p1Spawn.value !== null && p2Spawn.value !== null
+})
+
+const currentToolLabel = computed(() => {
+  if (selectedTool.value === 'p1-spawn') return 'Place P1 Spawn (left 3 columns)'
+  if (selectedTool.value === 'p2-spawn') return 'Place P2 Spawn (right 3 columns)'
+  return selectedTerrain.value
+})
+
+const saveButtonLabel = computed(() => {
+  if (!p1Spawn.value || !p2Spawn.value) return 'Place Both Spawns to Save'
+  if (!mapName.value.trim()) return 'Map Name Required'
+  return 'Save to Database'
+})
+
 // Initialize with land
 for (let row = 0; row < BOARD_SIZE; row++) {
   for (let col = 0; col < COLS_PER_ROW; col++) {
-    const key = `${row}-${col}`
-    terrainMap.set(key, 'land')
+    terrainMap.set(`${row}-${col}`, 'land')
   }
 }
 
@@ -170,14 +212,77 @@ onMounted(() => {
   fetchMaps()
 })
 
+function selectTerrain(type: TerrainType) {
+  selectedTool.value = 'terrain'
+  selectedTerrain.value = type
+}
+
 function getCellTerrain(row: number, col: number): TerrainType {
-  const key = `${row}-${col}`
-  return terrainMap.get(key) || 'void'
+  return terrainMap.get(`${row}-${col}`) || 'void'
+}
+
+function getCellHighlight(row: number, col: number): string {
+  if (selectedTool.value === 'p1-spawn' && col <= 2) return 'spawn-zone-p1'
+  if (selectedTool.value === 'p2-spawn' && col >= 5) return 'spawn-zone-p2'
+  return ''
 }
 
 function onCellClick(row: number, col: number) {
   const key = `${row}-${col}`
+
+  if (selectedTool.value === 'p1-spawn') {
+    if (col > 2) {
+      showStatus('P1 spawn must be in the first 3 columns (left side)', 'error')
+      return
+    }
+    // Remove old P1 spawn
+    if (p1Spawn.value) {
+      terrainMap.set(`${p1Spawn.value.row}-${p1Spawn.value.col}`, 'land')
+    }
+    p1Spawn.value = { row, col }
+    terrainMap.set(key, 'spawn')
+    return
+  }
+
+  if (selectedTool.value === 'p2-spawn') {
+    if (col < 5) {
+      showStatus('P2 spawn must be in the last 3 columns (right side)', 'error')
+      return
+    }
+    // Remove old P2 spawn
+    if (p2Spawn.value) {
+      terrainMap.set(`${p2Spawn.value.row}-${p2Spawn.value.col}`, 'land')
+    }
+    p2Spawn.value = { row, col }
+    terrainMap.set(key, 'spawn')
+    return
+  }
+
+  // Normal terrain painting ó if painting over a spawn, remove spawn tracking
+  if (p1Spawn.value && p1Spawn.value.row === row && p1Spawn.value.col === col) {
+    p1Spawn.value = null
+  }
+  if (p2Spawn.value && p2Spawn.value.row === row && p2Spawn.value.col === col) {
+    p2Spawn.value = null
+  }
   terrainMap.set(key, selectedTerrain.value)
+}
+
+// Detect spawn positions from loaded terrain data
+function detectSpawns() {
+  p1Spawn.value = null
+  p2Spawn.value = null
+
+  terrainMap.forEach((terrain, key) => {
+    if (terrain === 'spawn') {
+      const [row, col] = key.split('-').map(Number)
+      if (col <= 2 && !p1Spawn.value) {
+        p1Spawn.value = { row, col }
+      } else if (col >= 5 && !p2Spawn.value) {
+        p2Spawn.value = { row, col }
+      }
+    }
+  })
 }
 
 async function saveMapToDatabase() {
@@ -186,11 +291,15 @@ async function saveMapToDatabase() {
     return
   }
 
+  if (!p1Spawn.value || !p2Spawn.value) {
+    showStatus('Both spawn points must be placed before saving', 'error')
+    return
+  }
+
   const terrainData = Array.from(terrainMap.entries())
-  
+
   try {
     if (currentMapId.value) {
-      // Update existing map
       await updateMap(currentMapId.value, {
         name: mapName.value,
         description: mapDescription.value,
@@ -198,7 +307,6 @@ async function saveMapToDatabase() {
       })
       showStatus('Map updated successfully!', 'success')
     } else {
-      // Create new map
       const response = await createMap({
         name: mapName.value,
         description: mapDescription.value,
@@ -222,23 +330,28 @@ async function fetchMaps() {
   }
 }
 
+async function openLoadModal() {
+  showLoadModal.value = true
+  await fetchMaps()
+}
+
 async function loadMapFromDatabase(mapId: number) {
   try {
     loading.value = true
     const response = await getMap(mapId)
     const mapData = response.data
-    
-    // Load terrain data
+
     terrainMap.clear()
     mapData.terrain_data.forEach(([key, value]: [string, TerrainType]) => {
       terrainMap.set(key, value)
     })
-    
-    // Load map info
+
     mapName.value = mapData.name
     mapDescription.value = mapData.description || ''
     currentMapId.value = mapData.id
-    
+
+    detectSpawns()
+
     showLoadModal.value = false
     showStatus('Map loaded successfully!', 'success')
   } catch (error: any) {
@@ -250,17 +363,23 @@ async function loadMapFromDatabase(mapId: number) {
 
 async function deleteMapById(mapId: number) {
   if (!confirm('Are you sure you want to delete this map?')) return
-  
+
   try {
     await deleteMapApi(mapId)
-    
+
     if (currentMapId.value === mapId) {
-      clearMap()
       currentMapId.value = null
       mapName.value = ''
       mapDescription.value = ''
+      p1Spawn.value = null
+      p2Spawn.value = null
+      for (let row = 0; row < BOARD_SIZE; row++) {
+        for (let col = 0; col < COLS_PER_ROW; col++) {
+          terrainMap.set(`${row}-${col}`, 'land')
+        }
+      }
     }
-    
+
     await fetchMaps()
     showStatus('Map deleted successfully!', 'success')
   } catch (error: any) {
@@ -269,39 +388,21 @@ async function deleteMapById(mapId: number) {
 }
 
 function clearMap() {
-  if (confirm('Clear the entire map?')) {
-    for (let row = 0; row < BOARD_SIZE; row++) {
-      for (let col = 0; col < COLS_PER_ROW; col++) {
-        const key = `${row}-${col}`
-        terrainMap.set(key, 'land')
-      }
+  if (!confirm('Clear the entire map? This will reset all terrain to land and remove both spawns.')) return
+  
+  for (let row = 0; row < BOARD_SIZE; row++) {
+    for (let col = 0; col < COLS_PER_ROW; col++) {
+      terrainMap.set(`${row}-${col}`, 'land')
     }
-    mapName.value = ''
-    mapDescription.value = ''
-    currentMapId.value = null
-  }
-}
-
-function exportMap() {
-  const terrainData = Array.from(terrainMap.entries())
-  const mapData = {
-    name: mapName.value || 'Untitled Map',
-    description: mapDescription.value,
-    terrain_data: terrainData
   }
   
-  const json = JSON.stringify(mapData, null, 2)
+  p1Spawn.value = null
+  p2Spawn.value = null
+  mapName.value = ''
+  mapDescription.value = ''
+  currentMapId.value = null
   
-  // Create download link
-  const blob = new Blob([json], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `${mapName.value || 'map'}-data.json`
-  a.click()
-  URL.revokeObjectURL(url)
-  
-  showStatus('Map exported!', 'success')
+  showStatus('Map cleared', 'success')
 }
 
 function showStatus(message: string, type: 'success' | 'error') {
@@ -400,6 +501,27 @@ function formatDate(dateString: string) {
   color: #666;
 }
 
+/* Tool Section */
+.tool-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-group-label {
+  color: #aaa;
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
 .terrain-selector {
   display: flex;
   gap: 10px;
@@ -432,9 +554,75 @@ function formatDate(dateString: string) {
 .terrain-button.lava { background: #e74c3c; }
 .terrain-button.void { background: #2c3e50; }
 .terrain-button.mountain { background: #8b7355; }
-.terrain-button.spawn { background: #9c27b0; }
 .terrain-button.flag { background: #ffd700; color: #333; }
 
+/* Spawn Selector */
+.spawn-selector {
+  display: flex;
+  gap: 10px;
+}
+
+.spawn-button {
+  padding: 12px 24px;
+  border: 3px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+  color: white;
+  transition: all 0.2s;
+}
+
+.spawn-button:hover {
+  transform: scale(1.05);
+  filter: brightness(1.2);
+}
+
+.spawn-button.p1 {
+  background: #3b82f6;
+}
+
+.spawn-button.p2 {
+  background: #a855f7;
+}
+
+.spawn-button.active {
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.spawn-button.placed {
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+}
+
+.spawn-hint {
+  color: #666;
+  font-size: 12px;
+}
+
+/* Spawn Status */
+.spawn-status {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.spawn-indicator {
+  padding: 8px 14px;
+  background: #2a2a2a;
+  border: 2px solid #f44336;
+  border-radius: 4px;
+  color: #f44336;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.spawn-indicator.placed {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+
+/* Actions */
 .actions {
   display: flex;
   gap: 10px;
@@ -452,15 +640,19 @@ function formatDate(dateString: string) {
   font-size: 14px;
 }
 
-.action-button:hover {
+.action-button:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .action-button.save { background: #4caf50; }
 .action-button.load { background: #2196f3; }
 .action-button.clear { background: #f44336; }
-.action-button.export { background: #ff9800; }
 
 .status-message {
   padding: 10px 15px;
@@ -490,6 +682,7 @@ function formatDate(dateString: string) {
   }
 }
 
+/* Board */
 .board-wrapper {
   display: flex;
   justify-content: center;
@@ -499,71 +692,9 @@ function formatDate(dateString: string) {
   border-radius: 8px;
 }
 
-.editor-columns {
-  display: flex;
-  gap: 30px;
-  align-items: flex-start;
-  max-width: 1400px;
-  width: 100%;
-}
-
-.board-container {
-  flex: 1;
-}
-
-.section-title {
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  margin: 0 0 15px 0;
-  text-align: center;
-}
-
 .board {
   display: flex;
   flex-direction: column;
-}
-
-.preview-container {
-  width: 320px;
-  background: #0f0f0f;
-  padding: 20px;
-  border-radius: 8px;
-  border: 2px solid #333;
-  position: sticky;
-  top: 20px;
-}
-
-.preview-box {
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 280px;
-  border: 1px solid #444;
-}
-
-.preview-hint {
-  text-align: center;
-  color: #999;
-  font-size: 12px;
-  margin: 15px 0 0 0;
-  line-height: 1.4;
-}
-
-@media (max-width: 1200px) {
-  .editor-columns {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .preview-container {
-    position: relative;
-    width: 100%;
-    max-width: 400px;
-  }
 }
 
 .hex-row {
@@ -580,14 +711,40 @@ function formatDate(dateString: string) {
   margin-left: 43.3px;
 }
 
-.hex-row > * {
+.cell-slot {
   width: 86.6px;
   flex-shrink: 0;
   margin-left: -1px;
+  position: relative;
 }
 
-.hex-row > *:first-child {
+.cell-slot:first-child {
   margin-left: 0;
+}
+
+/* Spawn zone highlights - hex shaped */
+.cell-slot.spawn-zone-p1::after,
+.cell-slot.spawn-zone-p2::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  pointer-events: none;
+  z-index: 5;
+  animation: zonePulse 1.5s ease-in-out infinite;
+}
+
+.cell-slot.spawn-zone-p1::after {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.cell-slot.spawn-zone-p2::after {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+@keyframes zonePulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 .info {
