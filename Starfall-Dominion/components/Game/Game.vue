@@ -529,19 +529,7 @@ if (unit.actionsRemaining > 0) {
 }
 
 function addStartingUnits() {
-  // Add starting units for Player 1 using unit definitions
-  gameState.units.push(
-    createUnit('berserker', 'player1', 2, 0, 'p1-unit1', 2),
-    createUnit('marine', 'player1', 1, 0, 'p1-unit2', 2)
-  )
-  
-  // Add starting units for Player 2 using unit definitions
-  gameState.units.push(
-    createUnit('berserker', 'player2', 5, 7, 'p2-unit1', 2),
-    createUnit('marine', 'player2', 6, 7, 'p2-unit2', 2)
-  )
-  
-  unitIdCounter = 5 // Reset counter after adding initial units
+  unitIdCounter = 3 
 }
 
 function checkWinCondition() {
@@ -887,8 +875,11 @@ function handlePurchase(unitType: UnitType, cost: number) {
     shopSpawnPoint.value.row,
     shopSpawnPoint.value.col,
     `${gameState.currentPlayer}-unit${unitIdCounter++}`,
-    0 // Can't act on spawn turn
+    0
   )
+  
+  // Give recruited units their full actions
+  newUnit.actionsRemaining = newUnit.maxActions
   
   gameState.units.push(newUnit)
   
