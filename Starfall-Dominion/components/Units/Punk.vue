@@ -69,12 +69,13 @@ defineExpose({
 }
 
 .punk-sprite.player1 {
+  transform: scaleX(-1);
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
           drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
 }
 
 .punk-sprite.player2 {
-  transform: scaleX(-1);
+  transform: scaleX(1);
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
           drop-shadow(0 0 10px rgba(220, 38, 38, 0.3));
 }
