@@ -42,7 +42,7 @@
           <div class="stat-divider"></div>
           <div class="stat-item">
             <span class="stat-label rajdhani-font">MOVE</span>
-            <span class="stat-value orbitron-font">1</span>
+            <span class="stat-value orbitron-font">0</span>
           </div>
         </div>
         

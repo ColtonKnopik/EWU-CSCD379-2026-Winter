@@ -5,7 +5,6 @@
   >
     <div class="doomsday-separator"></div>
     <div class="doomsday-content">
-      <span class="doomsday-icon">☠</span>
       <span class="doomsday-label orbitron-font">DOOMSDAY</span>
     </div>
     <div class="doomsday-progress">
