@@ -1,5 +1,5 @@
 <template>
-  <div class="boot-sequence" :class="{ complete: isComplete }">
+  <div class="boot-sequence" :class="{ complete: isComplete }" @click="skipBootSequence">
     <!-- Terminal Boot Screen -->
     <div class="terminal-screen" v-if="showTerminal">
       <div class="terminal-content">
@@ -29,6 +29,11 @@
             <div class="progress-fill" :style="{ width: progress + '%' }"></div>
           </div>
           <span class="progress-text">{{ progress }}%</span>
+        </div>
+        
+        <!-- Skip hint -->
+        <div class="skip-hint">
+          <span class="skip-text">Click anywhere to skip</span>
         </div>
       </div>
       
@@ -70,6 +75,7 @@ const showInitializing = ref(false)
 const progress = ref(0)
 const fadingOut = ref(false)
 const isComplete = ref(false)
+const isSkipping = ref(false)
 
 const bootMessages: BootMessage[] = [
   { prefix: '[SYSTEM]', text: 'Initializing core systems', loading: true, delay: 500 },
@@ -101,25 +107,44 @@ function animateLoadingDots() {
   }, 200) as unknown as number
 }
 
+// Timers to track and clear
+let messageTimeouts: number[] = []
+let progressInterval: number | null = null
+
 // Display messages one by one
 async function displayMessages() {
   animateLoadingDots()
   
   for (let i = 0; i < bootMessages.length; i++) {
+    if (isSkipping.value) break
+    
     currentMessageIndex.value = i
     displayedMessages.value.push(bootMessages[i])
     
-    await new Promise(resolve => setTimeout(resolve, bootMessages[i].delay))
+    await new Promise(resolve => {
+      const timeout = setTimeout(resolve, bootMessages[i].delay) as unknown as number
+      messageTimeouts.push(timeout)
+    })
   }
+  
+  if (isSkipping.value) return
   
   clearInterval(dotsInterval)
   
   // Show initializing progress
-  await new Promise(resolve => setTimeout(resolve, 500))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 500) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
+  
   showInitializing.value = true
   
   // Animate progress bar
   await animateProgress()
+  
+  if (isSkipping.value) return
   
   // Start element reveal sequence
   await startRevealSequence()
@@ -133,48 +158,119 @@ async function animateProgress() {
     const stepDuration = duration / steps
     
     let current = 0
-    const interval = setInterval(() => {
+    progressInterval = setInterval(() => {
+      if (isSkipping.value) {
+        if (progressInterval) clearInterval(progressInterval)
+        resolve(true)
+        return
+      }
+      
       current += 1
       progress.value = current
       
       if (current >= 100) {
-        clearInterval(interval)
+        if (progressInterval) clearInterval(progressInterval)
         resolve(true)
       }
-    }, stepDuration)
+    }, stepDuration) as unknown as number
   })
 }
 
 // Reveal game elements in sequence
 async function startRevealSequence() {
   // Wait a moment
-  await new Promise(resolve => setTimeout(resolve, 500))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 500) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   // Fade out terminal
   fadingOut.value = true
-  await new Promise(resolve => setTimeout(resolve, 1000))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 1000) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   showTerminal.value = false
   
   // Reveal board first
   emit('showBoard')
-  await new Promise(resolve => setTimeout(resolve, 400))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 400) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   // Then header
   emit('showHeader')
-  await new Promise(resolve => setTimeout(resolve, 300))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 300) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   // Then sidebars
   emit('showSidebars')
-  await new Promise(resolve => setTimeout(resolve, 300))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 300) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   // Finally footer
   emit('showFooter')
-  await new Promise(resolve => setTimeout(resolve, 300))
+  await new Promise(resolve => {
+    const timeout = setTimeout(resolve, 300) as unknown as number
+    messageTimeouts.push(timeout)
+  })
+  
+  if (isSkipping.value) return
   
   // Sequence complete
   isComplete.value = true
   emit('complete')
+}
+
+// Skip boot sequence
+function skipBootSequence() {
+  if (isSkipping.value || isComplete.value) return
+  
+  isSkipping.value = true
+  
+  // Clear all pending timeouts
+  messageTimeouts.forEach(timeout => clearTimeout(timeout))
+  messageTimeouts = []
+  
+  // Clear intervals
+  if (dotsInterval) clearInterval(dotsInterval)
+  if (progressInterval) clearInterval(progressInterval)
+  
+  // Instantly complete all visual states
+  displayedMessages.value = bootMessages.map(msg => ({ ...msg, success: true, loading: false }))
+  showInitializing.value = true
+  progress.value = 100
+  fadingOut.value = true
+  
+  // Quick fade and emit all events
+  setTimeout(() => {
+    showTerminal.value = false
+    emit('showBoard')
+    emit('showHeader')
+    emit('showSidebars')
+    emit('showFooter')
+    
+    setTimeout(() => {
+      isComplete.value = true
+      emit('complete')
+    }, 100)
+  }, 300)
 }
 
 onMounted(() => {
@@ -193,10 +289,12 @@ onMounted(() => {
   height: 100vh;
   z-index: 9999;
   pointer-events: all;
+  cursor: pointer;
 }
 
 .boot-sequence.complete {
   pointer-events: none;
+  cursor: default;
 }
 
 /* Terminal Screen */
@@ -219,6 +317,7 @@ onMounted(() => {
   font-family: 'Source Code Pro', monospace;
   color: #00ff00;
   text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  position: relative;
 }
 
 .terminal-header {
@@ -387,6 +486,33 @@ onMounted(() => {
   text-align: center;
   font-weight: 700;
   text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+}
+
+/* Skip Hint */
+.skip-hint {
+  position: absolute;
+  bottom: -60px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  animation: skipHintPulse 2s ease-in-out infinite;
+}
+
+.skip-text {
+  font-size: 12px;
+  color: #00ff00;
+  opacity: 0.6;
+  text-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+  letter-spacing: 1px;
+}
+
+@keyframes skipHintPulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
 }
 
 /* Scanlines Effect */
