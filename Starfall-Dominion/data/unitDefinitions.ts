@@ -70,10 +70,10 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
     attackAnimation: 'melee-slash',
     attackAnimationDuration: 500,
     sounds: {
-      spawn: '/audio/units/berserker/spawn.mp3',
-      attack: '/audio/units/berserker/attack.mp3',
+      spawn: '/audio/units/berserker/spawn.m4a',
+      attack: '/audio/units/berserker/attack.m4a',
       hurt: '/audio/units/berserker/hurt.mp3',
-      death: '/audio/units/berserker/death.mp3'
+      death: '/audio/units/berserker/death.m4a'
     }
   },
   
