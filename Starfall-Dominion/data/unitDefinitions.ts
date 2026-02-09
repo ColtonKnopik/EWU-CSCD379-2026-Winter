@@ -182,6 +182,26 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
             hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
             death: '/audio/units/kobold/death.m4a'
         }
+    },
+    roman: {
+        type: 'roman',
+        displayName: 'Roman Legionnaire',
+        description: 'A steel-clad sentinel of a lost empire, forged of machine and honor. His blade glows with arcane power, his shield bears the mark of dominion, and his oath is eternal.\nIn ferro aeternitas, in igni imperium.\n(In steel, eternity. In fire, empire)',
+        cost: 100,
+        maxHealth: 100,
+        attackPower: 40,
+        moveRange: 2,
+        attackRange: 1,
+        maxActions: 2,
+        spritePath: 'Roman.png',
+        attackAnimation: 'melee-slash',
+        attackAnimationDuration: 500,
+        sounds: {
+            spawn: '/audio/units/roman/spawn.m4a',
+            attack: '/audio/units/roman/attack.m4a',
+            hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
+            death: '/audio/units/roman/death.m4a'
+        }
     }
 }
 
