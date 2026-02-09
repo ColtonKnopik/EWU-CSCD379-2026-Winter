@@ -144,13 +144,13 @@ const beamStyle = computed(() => ({
 
 <style scoped>
 .charged-blast {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 9999;
   overflow: visible;
 }
 
@@ -183,11 +183,11 @@ const beamStyle = computed(() => ({
 
 /* CHARGING PHASE */
 .charging-phase {
-  position: absolute;
+  position: fixed;
   width: 200px;
   height: 200px;
   transform: translate(-50%, -50%);
-  z-index: 2;
+  z-index: 10000;
 }
 
 /* Energy core */
@@ -360,12 +360,12 @@ const beamStyle = computed(() => ({
 
 /* BLAST PHASE */
 .blast-phase {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 3;
+  z-index: 10000;
   animation: blastReveal 0.1s ease-out 2s forwards;
   opacity: 0;
 }
@@ -376,7 +376,7 @@ const beamStyle = computed(() => ({
 
 /* Blast flash at attacker position */
 .blast-flash {
-  position: absolute;
+  position: fixed;
   width: 100px;
   height: 100px;
   background: radial-gradient(
@@ -409,7 +409,7 @@ const beamStyle = computed(() => ({
 
 /* Shockwave beam (rotated and sized dynamically) */
 .shockwave-beam {
-  position: absolute;
+  position: fixed;
   height: 60px;
   background: linear-gradient(
     90deg,
@@ -442,7 +442,7 @@ const beamStyle = computed(() => ({
 
 /* Beam particles */
 .beam-particles {
-  position: absolute;
+  position: fixed;
   height: 60px;
 }
 
@@ -480,7 +480,7 @@ const beamStyle = computed(() => ({
 
 /* Impact zone at defender position */
 .impact-zone {
-  position: absolute;
+  position: fixed;
   width: 150px;
   height: 150px;
   transform: translate(-50%, -50%);

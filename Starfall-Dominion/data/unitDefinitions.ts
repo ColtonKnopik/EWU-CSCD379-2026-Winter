@@ -140,7 +140,30 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
       death: '/audio/units/punk/death.m4a'
     },
     explodeOnDeath: true
-  }
+    },
+    tank: {
+        type: 'tank',
+        displayName: 'Tank',
+        description: 'Armored machine of destruction',
+        cost: 100,
+        maxHealth: 150,
+        attackPower: 40,
+        moveRange: 1,
+        attackRange: 2,
+        maxActions: 2,
+        spritePath: 'Tank.png',
+        attackAnimation: 'explosive-attack',
+        attackAnimationDuration: 500,
+        sounds: {
+            spawn: '/audio/units/tank/spawn.m4a',
+            attack: '/audio/units/tank/attack.m4a',
+            hurt: '/audio/units/tank/hurt.mp3',
+            death: '/audio/units/tank/death.m4a'
+        },
+        canMove: true,
+        explodeOnDeath: true
+    },
+
 }
 
 // Helper function to get unit definition
