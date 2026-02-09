@@ -163,7 +163,26 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
         canMove: true,
         explodeOnDeath: true
     },
-
+    kobold: {
+        type: 'kobold',
+        displayName: 'Kobold',
+        description: 'Low damage, Fast unit',
+        cost: 25,
+        maxHealth: 50,
+        attackPower: 15,
+        moveRange: 3,
+        attackRange: 1,
+        maxActions: 2,
+        spritePath: 'Kobold.png',
+        attackAnimation: 'ranged-shot',
+        attackAnimationDuration: 500,
+        sounds: {
+            spawn: '/audio/units/kobold/spawn.m4a',
+            attack: '/audio/units/kobold/attack.m4a',
+            hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
+            death: '/audio/units/kobold/death.m4a'
+        }
+    }
 }
 
 // Helper function to get unit definition

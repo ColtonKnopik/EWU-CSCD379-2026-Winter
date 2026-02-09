@@ -11,6 +11,7 @@ export function useUnitSounds(unitType: UnitType) {
   const loadedSounds = ref<Set<string>>(new Set())
 
   function preloadAudio(url: string): HTMLAudioElement | null {
+    if (!url) return null
     if (audioCache.has(url)) {
       return audioCache.get(url)!
     }

@@ -140,6 +140,18 @@
                 :is-attacking="isUnitAttacking(row - 1, col - 1)"
                 @click="handleCellClick(row - 1, col - 1)"
               />
+              <Kobold
+                v-else-if="getUnitAt(row - 1, col - 1)!.unitType === 'kobold'"
+                :ref="(el: any) => setUnitRef(getUnitAt(row - 1, col - 1)?.id, el)"
+                :player="getUnitAt(row - 1, col - 1)!.player"
+                :health="getUnitAt(row - 1, col - 1)!.health"
+                :max-health="getUnitAt(row - 1, col - 1)!.maxHealth"
+                :actions-remaining="getUnitAt(row - 1, col - 1)!.actionsRemaining"
+                :is-selected="selectedUnitId === getUnitAt(row - 1, col - 1)!.id"
+                :current-player="currentPlayer"
+                :is-attacking="isUnitAttacking(row - 1, col - 1)"
+                @click="handleCellClick(row - 1, col - 1)"
+              />
             </template>
           </div>
         </div>
@@ -224,6 +236,19 @@
           :is-attacking="isUnitAttacking(anim.unit.row, anim.unit.col)"
           :style="getAnimationStyle(anim)"
         />
+        <Kobold
+          v-for="anim in animatingUnits.filter(a => a.unit.unitType === 'kobold')"
+          :key="anim.unitId"
+          :ref="(el: any) => setUnitRef(anim.unitId, el)"
+          :player="anim.unit.player"
+          :health="anim.unit.health"
+          :max-health="anim.unit.maxHealth"
+          :actions-remaining="anim.unit.actionsRemaining"
+          :is-selected="selectedUnitId === anim.unitId"
+          :current-player="currentPlayer"
+          :is-attacking="isUnitAttacking(anim.unit.row, anim.unit.col)"
+          :style="getAnimationStyle(anim)"
+        />
       </div>
     </div>
   </div>
@@ -238,6 +263,7 @@ import Marine from '~~/components/Units/Marine.vue'
 import Daft from '~~/components/Units/Daft.vue'
 import Punk from '~~/components/Units/Punk.vue'
 import Tank from '~~/components/Units/Tank.vue'
+import Kobold from '~~/components/Units/Kobold.vue'
 import Explosion from '~~/components/Animations/Explosion.vue'
 import MeleeSlash from '~~/components/Animations/AttackAnimations/MeleeSlash.vue'
 import RangedShot from '~~/components/Animations/AttackAnimations/RangedShot.vue'
