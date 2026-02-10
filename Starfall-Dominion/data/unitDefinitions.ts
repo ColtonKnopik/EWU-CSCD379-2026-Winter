@@ -202,6 +202,26 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
             hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
             death: '/audio/units/roman/death.m4a'
         }
+    },
+    alienshieldbearer: {
+        type: 'alienshieldbearer',
+        displayName: 'Alien Shield Bearer',
+        description: 'Alien with a shield',
+        cost: 50,
+        maxHealth: 100,
+        attackPower: 20,
+        moveRange: 2,
+        attackRange: 1,
+        maxActions: 2,
+        spritePath: 'Alien-Shield-Bearer.png',
+        attackAnimation: 'melee-slash',
+        attackAnimationDuration: 500,
+        sounds: {
+            spawn: '/audio/units/alien-shield-bearer/spawn.m4a',
+            attack: '/audio/units/alien-shield-bearer/attack.m4a',
+            hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
+            death: '/audio/units/alien-shield-bearer/death.m4a'
+        }
     }
 }
 

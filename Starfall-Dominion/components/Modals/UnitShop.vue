@@ -42,7 +42,7 @@
                   <div class="sprite-frame" :style="{ backgroundImage: `url(${unit.image})` }"></div>
                 </div>
                 <div class="item-info">
-                  <div class="item-name">{{ unit.name }}</div>
+                  <div class="item-name">{{ unit.displayName }}</div>
                   <div class="item-cost">
                     <span class="cost-value">{{ unit.cost }}</span>
                     <span class="cost-label">CR</span>
@@ -82,7 +82,7 @@
             <!-- Unit Header -->
             <div class="detail-header">
               <div class="unit-title-section">
-                <h2 class="unit-title">{{ selectedUnit.name }}</h2>
+                <h2 class="unit-title">{{ selectedUnit.displayName }}</h2>
                 <div class="unit-type-badge">{{ selectedUnit.type.toUpperCase() }}</div>
               </div>
               <div class="unit-cost-badge">

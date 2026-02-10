@@ -1,7 +1,7 @@
 import { type TerrainType } from '~~/components/Board/Cell.vue'
 
 export type Player = 'player1' | 'player2'
-export type UnitType = 'captain' | 'berserker' | 'marine' | 'daft' | 'punk' | 'tank' | 'kobold' | 'roman'
+export type UnitType = 'captain' | 'berserker' | 'marine' | 'daft' | 'punk' | 'tank' | 'kobold' | 'roman' | 'alienshieldbearer'
 
 export interface Unit {
   id: string

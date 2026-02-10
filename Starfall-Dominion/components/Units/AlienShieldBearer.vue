@@ -1,6 +1,6 @@
 <template>
   <Unit
-    unit-type="roman"
+    unit-type="alien-shield-bearer"
     :player="player"
     :health="health"
     :max-health="maxHealth"
@@ -11,7 +11,7 @@
   >
     <template #icon>
       <div 
-        class="roman-sprite" 
+        class="alien-shield-bearer-sprite" 
         :class="[player, { attacking: isAttacking }]"
       ></div>
     </template>
@@ -44,7 +44,7 @@ defineEmits<{
 }>()
 
 // Setup unit-specific sounds using unit type
-const sounds = useUnitSounds('roman')
+const sounds = useUnitSounds('alienshieldbearer')
 
 // Expose sound methods to parent
 defineExpose({
@@ -56,10 +56,10 @@ defineExpose({
 </script>
 
 <style scoped>
-.roman-sprite {
+.alien-shield-bearer-sprite {
   width: 95%;
   height: 95%;
-  background-image: url('../../data/sprites/Roman.png');
+  background-image: url('../../data/sprites/Alien-Shield-Bearer.png');
   background-size: 200% 200%; /* 2x2 grid: attack frame in top right */
   background-repeat: no-repeat;
   background-position: 0% 0%;
@@ -68,25 +68,25 @@ defineExpose({
   animation: roman-breathe 2.5s steps(2) infinite;
 }
 
-.roman-sprite.player1 {
+.alien-shield-bearer-sprite.player1 {
   transform: scaleX(-1);
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
           drop-shadow(0 0 10px rgba(59, 130, 246, 0.3));
 }
 
-.roman-sprite.player2 {
+.alien-shield-bearer-sprite.player2 {
   filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.4)) 
           drop-shadow(0 0 10px rgba(220, 38, 38, 0.3));
 }
 
 /* Attack animation: show top right frame */
-    .roman-sprite.attacking {
+    .alien-shield-bearer-sprite.attacking {
         background-position: 100% 0%;
         animation: none;
     }
 
 /* Breathing animation: cycle between left column frames (top left and bottom left) */
-@keyframes roman-breathe {
+@keyframes alien-shield-bearer-breathe {
     0% { background-position: 0% 0%; }
     100% { background-position: 0% 200%; }
 }
