@@ -177,10 +177,10 @@ export const UNIT_DEFINITIONS: Record<UnitType, UnitDefinition> = {
         attackAnimation: 'ranged-shot',
         attackAnimationDuration: 500,
         sounds: {
-            spawn: '/audio/units/kobold/spawn.m4a',
-            attack: '/audio/units/kobold/attack.m4a',
+            spawn: '/audio/units/kobold/spawn.mp3',
+            attack: '/audio/units/kobold/attack.mp3',
             hurt: '', // no dedicated hurt sample available, leave empty to avoid 404
-            death: '/audio/units/kobold/death.m4a'
+            death: '/audio/units/kobold/death.mp3'
         }
     },
     roman: {
