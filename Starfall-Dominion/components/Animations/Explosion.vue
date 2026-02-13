@@ -24,7 +24,6 @@
 </template>
 
 <script setup lang="ts">
-// No logic needed, pure visual effect
 </script>
 
 <style scoped>
